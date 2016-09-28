@@ -1,4 +1,4 @@
-# Mocked Streams [![CircleCI](https://circleci.com/gh/jpzk/mockedstreams.svg?style=svg)](https://circleci.com/gh/jpzk/mockedstreams)
+# Mocked Streams [![Build Status](https://travis-ci.org/jpzk/mockedstreams.svg?branch=master)](https://travis-ci.org/jpzk/mockedstreams)
 
 **Mocked Streams is a Kafka Streams testing library** for Kafka >= 0.10.1-SNAPSHOT (snapshot JARs included in /lib) which makes use of the ProcessorTopologyTestDriver, therefore **no Kafka brokers and Zookeeper needed** and tests can be run in parallel. It integrates well with any testing framework. The library will be published on the Maven repositories once the new Kafka version is released.
 
