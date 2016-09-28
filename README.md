@@ -1,10 +1,13 @@
 # Mocked Streams
 
-**Mocked Streams is a Kafka Streams testing library** for Kafka >= 0.10.1-SNAPSHOT (snapshot JARs included in /lib) which makes use of the ProcessorTopologyTestDriver, therefore **no Kafka brokers and Zookeeper needed** . It integrates well with any testing framework. The following example shows a topology with multiple inputs and output streams. The library will be published on the Maven repositories once the new Kafka version is released. The following example is an excerpt of a ScalaTest Spec, see [here](https://github.com/jpzk/mockedstreams/blob/master/src/test/scala/MockedStreamsSpec.scala) for the definition of the topology.
+**Mocked Streams is a Kafka Streams testing library** for Kafka >= 0.10.1-SNAPSHOT (snapshot JARs included in /lib) which makes use of the ProcessorTopologyTestDriver, therefore **no Kafka brokers and Zookeeper needed** and tests can be run in parallel . It integrates well with any testing framework. The following example shows a topology with multiple inputs and output streams. The library will be published on the Maven repositories once the new Kafka version is released. The following example is an excerpt of a ScalaTest Spec, see [here](https://github.com/jpzk/mockedstreams/blob/master/src/test/scala/MockedStreamsSpec.scala) for the definition of the topology.
 
     [...]
     it should "assert correctly when processing multi input output topology" in {
       import Fixtures.Multi._
+      
+      val strings = Serdes.String()
+      val ints = Serdes.Integer()
 
       val topology = new MultiInputOutputTopology()
       val builder = MockedStreams()
