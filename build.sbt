@@ -5,6 +5,7 @@ lazy val commonSettings = Seq(
   description := "",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
   parallelExecution in Test := false,
+  coverageEnabled := true,
   scalacOptions := Seq("-Xexperimental"))
 
 val log4jVersion = "1.2.17"
