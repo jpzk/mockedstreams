@@ -18,7 +18,6 @@ package mwt.mockedstreams
 
 import java.util.{Properties, UUID}
 
-import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.KStreamBuilder
@@ -42,14 +41,14 @@ object MockedStreams {
 
     def stateStores(stores: Seq[String]) = this.copy(stateStoresUsed = stores)
 
-    def input[K, V](topic: String, keySerde: Serde[K], valSerde: Serde[V], seq: Seq[(K, V)]) = {
-      val keySer = keySerde.serializer()
-      val valSer = valSerde.serializer()
+    def input[K, V](topic: String, key: Serde[K], value: Serde[V], seq: Seq[(K, V)]) = {
+      val keySer = key.serializer
+      val valSer = value.serializer
       val in = seq.map { case (k, v) => (keySer.serialize(topic, k), valSer.serialize(topic, v)) }
       this.copy(inputs = inputs + (topic -> Input(in)))
     }
 
-    def output[K, V](topic: String, keySerde: Serde[K], valSerde: Serde[V], size: Int) = {
+    def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
       if (size <= 0)
         throw new ExpectedOutputIsEmpty
       if (inputs.size == 0)
@@ -63,8 +62,8 @@ object MockedStreams {
       val driver = stream(t, stateStoresUsed)
       produce(driver)
 
-      val keyDes = keySerde.deserializer()
-      val valDes = valSerde.deserializer()
+      val keyDes = key.deserializer
+      val valDes = value.deserializer
       (0 until size).flatMap { i =>
         Option(driver.readOutput(topic, keyDes, valDes)) match {
           case Some(record) => Some((record.key, record.value))
@@ -78,7 +77,6 @@ object MockedStreams {
       val props = new Properties
       props.put(StreamsConfig.APPLICATION_ID_CONFIG, s"mocked-${UUID.randomUUID().toString}")
       props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-
 
       val builder = new KStreamBuilder
       topology.builtBy(builder)
