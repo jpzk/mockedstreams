@@ -6,7 +6,7 @@
   * (the "License"); you may not use this file except in compliance with
   * the License.  You may obtain a copy of the License at
   *
-  *    http://www.apache.org/licenses/LICENSE-2.0
+  * http://www.apache.org/licenses/LICENSE-2.0
   *
   * Unless required by applicable law or agreed to in writing, software
   * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,23 +23,22 @@ import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.KStreamBuilder
 import org.apache.kafka.test.ProcessorTopologyTestDriver
 
-trait MockedTopology {
-  def builtBy(builder: KStreamBuilder): Unit
-}
-
 object MockedStreams {
 
   def apply() = Builder()
 
   case class Input(seq: Seq[(Array[Byte], Array[Byte])])
 
-  case class Builder(topology: Option[MockedTopology] = None,
-                     stateStoresUsed: Seq[String] = Seq(),
+  case class Builder(topology: Option[(KStreamBuilder => Unit)] = None,
+                     configuration: Properties = new Properties(),
+                     stateStores: Seq[String] = Seq(),
                      inputs: Map[String, Input] = Map()) {
 
-    def topology(topology: MockedTopology) = this.copy(topology = Some(topology))
+    def config(configuration: Properties) = this.copy(configuration = configuration)
 
-    def stateStores(stores: Seq[String]) = this.copy(stateStoresUsed = stores)
+    def topology(func: (KStreamBuilder => Unit)) = this.copy(topology = Some(func))
+
+    def stores(stores: Seq[String]) = this.copy(stateStores = stores)
 
     def input[K, V](topic: String, key: Serde[K], value: Serde[V], seq: Seq[(K, V)]) = {
       val keySer = key.serializer
@@ -54,12 +53,7 @@ object MockedStreams {
       if (inputs.size == 0)
         throw new NoInputSpecified
 
-      val t = topology match {
-        case Some(t) => t
-        case _ => throw new NoTopologySpecified
-      }
-
-      val driver = stream(t, stateStoresUsed)
+      val driver = stream
       produce(driver)
 
       val keyDes = key.deserializer
@@ -73,13 +67,19 @@ object MockedStreams {
     }
 
     // state store is temporarily created in ProcessorTopologyTestDriver
-    private def stream(topology: MockedTopology, stateStores: Seq[String]) = {
+    private def stream = {
       val props = new Properties
       props.put(StreamsConfig.APPLICATION_ID_CONFIG, s"mocked-${UUID.randomUUID().toString}")
       props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+      props.putAll(configuration)
 
       val builder = new KStreamBuilder
-      topology.builtBy(builder)
+
+      topology match {
+        case Some(t) => t(builder)
+        case _ => throw new NoTopologySpecified
+      }
+
       new ProcessorTopologyTestDriver(new StreamsConfig(props), builder, stateStores: _*)
     }
 

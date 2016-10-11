@@ -6,7 +6,7 @@
   * (the "License"); you may not use this file except in compliance with
   * the License.  You may obtain a copy of the License at
   *
-  *    http://www.apache.org/licenses/LICENSE-2.0
+  * http://www.apache.org/licenses/LICENSE-2.0
   *
   * Unless required by applicable law or agreed to in writing, software
   * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,68 +25,40 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
   behavior of "MockedStreams"
 
-  def int(i: Int) = Integer.valueOf(i)
-
-  object Fixtures {
-
-    object Uppercase {
-      val input = Seq(("x", "v1"), ("y", "v2"))
-      val expected = Seq(("x", "V1"), ("y", "V2"))
-
-      val strings = Serdes.String()
-      val ints = Serdes.Integer()
-    }
-
-    object Multi {
-      val inputA = Seq(("x", int(1)), ("y", int(2)))
-      val inputB = Seq(("x", int(4)), ("y", int(3)))
-      val expectedA = Seq(("x", int(5)), ("y", int(5)))
-      val expectedB = Seq(("x", int(3)), ("y", int(1)))
-
-      val strings = Serdes.String()
-      val ints = Serdes.Integer()
-    }
-  }
-
   it should "throw exception when expected size is <= 0" in {
     import Fixtures.Uppercase._
     import MockedStreams.ExpectedOutputIsEmpty
 
-    val topology = new UppercaseTopologyString()
+    an[ExpectedOutputIsEmpty] should be thrownBy
+      MockedStreams()
+        .topology(topology _)
+        .input(InputTopic, strings, strings, input)
+        .output(OutputTopic, strings, strings, 0)
 
     an[ExpectedOutputIsEmpty] should be thrownBy
       MockedStreams()
-        .topology(topology)
-        .input(topology.Input, strings, strings, input)
-        .output(topology.Output, strings, strings, 0)
-
-    an[ExpectedOutputIsEmpty] should be thrownBy
-      MockedStreams()
-        .topology(topology)
-        .input(topology.Input, strings, strings, input)
-        .output(topology.Output, strings, strings, -1)
+        .topology(topology _)
+        .input(InputTopic, strings, strings, input)
+        .output(OutputTopic, strings, strings, -1)
   }
 
   it should "throw exception when no input specified" in {
     import Fixtures.Uppercase._
     import MockedStreams.NoInputSpecified
-    val topology = new UppercaseTopologyString()
 
     an[NoInputSpecified] should be thrownBy
       MockedStreams()
-        .topology(topology)
-        .output(topology.Output, strings, strings, expected.size)
+        .topology(topology _)
+        .output(OutputTopic, strings, strings, expected.size)
   }
 
   it should "assert correctly when processing strings to uppercase" in {
     import Fixtures.Uppercase._
 
-    val topology = new UppercaseTopologyString()
-
     val output = MockedStreams()
-      .topology(topology)
-      .input(topology.Input, strings, strings, input)
-      .output(topology.Output, strings, strings, expected.size)
+      .topology(topology _)
+      .input(InputTopic, strings, strings, input)
+      .output(OutputTopic, strings, strings, expected.size)
 
     output shouldEqual expected
   }
@@ -94,14 +66,12 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
   it should "assert correctly when processing multi input topology" in {
     import Fixtures.Multi._
 
-    val topology = new MultiInputTopology()
-
     val output = MockedStreams()
-      .topology(topology)
-      .input[String, Integer](topology.InputA, strings, ints, inputA)
-      .input[String, Integer](topology.InputB, strings, ints, inputB)
-      .stateStores(Seq(topology.Store))
-      .output(topology.Output, strings, ints, expectedA.size)
+      .topology(topology1Output _)
+      .input(InputATopic, strings, ints, inputA)
+      .input(InputBTopic, strings, ints, inputB)
+      .stores(Seq(StoreName))
+      .output(OutputATopic, strings, ints, expectedA.size)
 
     output shouldEqual expectedA
   }
@@ -109,32 +79,17 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
   it should "assert correctly when processing multi input output topology" in {
     import Fixtures.Multi._
 
-    val topology = new MultiInputOutputTopology()
     val builder = MockedStreams()
-      .topology(topology)
-      .input[String, Integer](topology.InputA, strings, ints, inputA)
-      .input[String, Integer](topology.InputB, strings, ints, inputB)
-      .stateStores(Seq(topology.Store))
+      .topology(topology2Output _)
+      .input(InputATopic, strings, ints, inputA)
+      .input(InputBTopic, strings, ints, inputB)
+      .stores(Seq(StoreName))
 
-    builder.output(topology.OutputA, strings, ints, expectedA.size)
+    builder.output(OutputATopic, strings, ints, expectedA.size)
       .shouldEqual(expectedA)
 
-    builder.output(topology.OutputB, strings, ints, expectedB.size)
+    builder.output(OutputBTopic, strings, ints, expectedB.size)
       .shouldEqual(expectedB)
-  }
-
-
-  class UppercaseTopologyString extends MockedTopology {
-    import Fixtures.Uppercase._
-
-    val Input = "input"
-    val Output = "output"
-
-    override def builtBy(builder: KStreamBuilder): Unit = {
-      builder.stream(strings, strings, Input)
-        .map((k, v) => new KeyValue(k, v.toUpperCase))
-        .to(strings, strings, Output)
-    }
   }
 
   class LastInitializer extends Initializer[Integer] {
@@ -153,52 +108,73 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     override def apply(v1: Integer, v2: Integer): Integer = v1 - v2
   }
 
-  class MultiInputTopology extends MockedTopology {
-    import Fixtures.Multi._
+  object Fixtures {
 
-    val InputA = "inputA"
-    val InputB = "inputB"
-    val Output = "ouput"
-    val Store = "store"
+    object Uppercase {
+      val input = Seq(("x", "v1"), ("y", "v2"))
+      val expected = Seq(("x", "V1"), ("y", "V2"))
 
-    override def builtBy(builder: KStreamBuilder): Unit = {
-      val streamA = builder.stream(strings, ints, InputA)
-      val streamB = builder.stream(strings, ints, InputB)
+      val strings = Serdes.String()
+      val ints = Serdes.Integer()
 
-      val table = streamA.groupByKey(strings, ints).aggregate(
-        new LastInitializer,
-        new LastAggregator, ints, Store)
+      val InputTopic = "input"
+      val OutputTopic = "output"
 
-      streamB.leftJoin(table, new AddJoiner(), strings, ints)
-        .to(strings, ints, Output)
+      def topology(builder: KStreamBuilder) = {
+        builder.stream(strings, strings, InputTopic)
+          .map((k, v) => new KeyValue(k, v.toUpperCase))
+          .to(strings, strings, OutputTopic)
+      }
     }
-  }
 
-  class MultiInputOutputTopology extends MockedTopology {
-    import Fixtures.Multi._
+    object Multi {
 
-    val InputA = "inputA"
-    val InputB = "inputB"
-    val OutputA = "outputA"
-    val OutputB = "outputB"
-    val Store = "store"
+      def int(i: Int) = Integer.valueOf(i)
 
-    override def builtBy(builder: KStreamBuilder): Unit = {
-      val streamA = builder.stream(strings, ints, InputA)
-      val streamB = builder.stream(strings, ints, InputB)
+      val inputA = Seq(("x", int(1)), ("y", int(2)))
+      val inputB = Seq(("x", int(4)), ("y", int(3)))
+      val expectedA = Seq(("x", int(5)), ("y", int(5)))
+      val expectedB = Seq(("x", int(3)), ("y", int(1)))
 
-      val table = streamA.groupByKey(strings, ints).aggregate(
-        new LastInitializer,
-        new LastAggregator,
-        ints,
-        Store)
+      val strings = Serdes.String()
+      val ints = Serdes.Integer()
 
-      streamB.leftJoin(table, new AddJoiner(), strings, ints)
-        .to(strings, ints, OutputA)
+      val InputATopic = "inputA"
+      val InputBTopic = "inputB"
+      val OutputATopic = "outputA"
+      val OutputBTopic = "outputB"
+      val StoreName = "store"
 
-      streamB.leftJoin(table, new SubJoiner(), strings, ints)
-        .to(strings, ints, OutputB)
+      def topology1Output(builder: KStreamBuilder) = {
+        val streamA = builder.stream(strings, ints, InputATopic)
+        val streamB = builder.stream(strings, ints, InputBTopic)
+
+        val table = streamA.groupByKey(strings, ints).aggregate(
+          new LastInitializer,
+          new LastAggregator, ints, StoreName)
+
+        streamB.leftJoin(table, new AddJoiner(), strings, ints)
+          .to(strings, ints, OutputATopic)
+      }
+
+      def topology2Output(builder: KStreamBuilder) = {
+        val streamA = builder.stream(strings, ints, InputATopic)
+        val streamB = builder.stream(strings, ints, InputBTopic)
+
+        val table = streamA.groupByKey(strings, ints).aggregate(
+          new LastInitializer,
+          new LastAggregator,
+          ints,
+          StoreName)
+
+        streamB.leftJoin(table, new AddJoiner(), strings, ints)
+          .to(strings, ints, OutputATopic)
+
+        streamB.leftJoin(table, new SubJoiner(), strings, ints)
+          .to(strings, ints, OutputBTopic)
+      }
     }
+
   }
 
 }
