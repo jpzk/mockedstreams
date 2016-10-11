@@ -28,7 +28,7 @@ In the example, we have only one input and one output topic. However, we are abl
       .topology { builder => builder.stream(...) [...] }
       .input("in-a", strings, ints, inputA)
       .input("in-b", strings, ints, inputB)
-      .stateStores(Seq("store-name"))
+      .stores(Seq("store-name"))
 
     mstreams.output("out-a", strings, ints, expA.size) shouldEqual(expectedA)
     mstreams.output("out-b", strings, ints, expB.size) shouldEqual(expectedB)
