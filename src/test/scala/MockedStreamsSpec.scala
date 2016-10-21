@@ -63,6 +63,17 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     output shouldEqual expected
   }
 
+  it should "assert correctly when processing strings to uppercase match against table" in {
+    import Fixtures.Uppercase._
+
+    val output = MockedStreams()
+      .topology(topology _)
+      .input(InputTopic, strings, strings, input)
+      .outputTable(OutputTopic, strings, strings, expected.size)
+
+    output shouldEqual expected.toMap
+  }
+
   it should "assert correctly when processing multi input topology" in {
     import Fixtures.Multi._
 

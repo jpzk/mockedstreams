@@ -66,6 +66,10 @@ object MockedStreams {
       }
     }
 
+    def outputTable[K,V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
+      output[K,V](topic, key, value, size).toMap
+    }
+
     // state store is temporarily created in ProcessorTopologyTestDriver
     private def stream = {
       val props = new Properties
