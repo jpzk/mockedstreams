@@ -1,6 +1,6 @@
 lazy val commonSettings = Seq(
   organization := "com.madewithtea",
-  version := "1.0.0",
+  version := "1.0.0-SNAPSHOT",
   scalaVersion := "2.11.8",
   description := "Topology Unit-Testing Library for Apache Kafka / Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
@@ -54,7 +54,7 @@ publishArtifact in Test := false
 pomIncludeRepository := { _ => false }
 
 pomExtra := (
-  <url>https://www.madewithtea.com/pages/mockedstreams.html</url>
+  <url>https://www.madewithtea.com/pages/mocked-streams.html</url>
     <licenses>
       <license>
         <name>Apache License Version 2.0</name>
