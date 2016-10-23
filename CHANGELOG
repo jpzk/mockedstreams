@@ -2,11 +2,12 @@
 
 ## Mocked Streams 1.0 (Practice Peace)
 
-* Released on Maven Central Repository
-* Multiple input and output streams
-* Specification of topology as function (KStreamBuilder => Unit)
-* .outputTable will return compacted table as Map[K,V]
 * Support for Scala 2.11.8
 * Support for Apache Kafka 0.10.1.0
+* Released on Maven Central Repository
+* Multiple input and output streams
+* Specification of topology as a function: (KStreamBuilder => Unit)
+* Added .config method to pass configuration to Kafka Streams instance
+* Added .outputTable method will return compacted table as Map[K,V]
 * Test suite
 

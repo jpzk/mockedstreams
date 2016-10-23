@@ -6,7 +6,7 @@ Mocked Streams 1.0 [(git)](https://github.com/jpzk/mockedstreams) is a library f
 
     libraryDependencies += "com.madewithtea" %% "mockedstreams" % "1.0.0" % "test"
 
-## Example
+## Simple Example
 
 It wraps the [org.apache.kafka.test.ProcessorTopologyTestDriver](https://github.com/apache/kafka/blob/trunk/streams/src/test/java/org/apache/kafka/test/ProcessorTopologyTestDriver.java) class, but adds more syntactic sugar to keep your test code simple:
 
@@ -21,12 +21,33 @@ It wraps the [org.apache.kafka.test.ProcessorTopologyTestDriver](https://github.
       .input("topic-in", strings, strings, input)
       .output("topic-out", strings, strings, exp.size) shouldEqual exp
 
-It also allows you to have multiple input and output streams:
+## Multiple Input / Output Example and State
+
+It also allows you to have multiple input and output streams. If your topology uses state stores you need to define them using .stores(Seq[String]):
 
     import com.madewithtea.mockedstreams.MockedStreams
 
     val mstreams = MockedStreams()
       .topology { builder => builder.stream(...) [...] }
+      .input("in-a", strings, ints, inputA)
+      .input("in-b", strings, ints, inputB)
+      .stores(Seq("store-name"))
+
+    mstreams.output("out-a", strings, ints, expA.size) shouldEqual(expectedA)
+    mstreams.output("out-b", strings, ints, expB.size) shouldEqual(expectedB)
+ 
+## Custom Streams Configuration
+
+Sometimes you need to pass a custom configuration to Kafka Streams:
+
+    import com.madewithtea.mockedstreams.MockedStreams
+
+      val props = new Properties
+      props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG, classOf[CustomExtractor].getName)
+
+      val mstreams = MockedStreams()
+      .topology { builder => builder.stream(...) [...] }
+      .config(props)
       .input("in-a", strings, ints, inputA)
       .input("in-b", strings, ints, inputB)
       .stores(Seq("store-name"))
