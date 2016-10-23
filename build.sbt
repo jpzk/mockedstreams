@@ -1,22 +1,30 @@
 lazy val commonSettings = Seq(
-  organization := "mwt.mockedstreams",
+  organization := "com.madewithtea",
   version := "1.0.0",
   scalaVersion := "2.11.8",
-  description := "",
+  description := "Topology Unit-Testing Library for Apache Kafka / Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
-  parallelExecution in Test := false,
   coverageEnabled := true,
   scalacOptions := Seq("-Xexperimental"))
 
 val log4jVersion = "1.2.17"
 val slf4jVersion = "1.7.21"
+val scalaTestVersion = "2.2.6"
+val rocksDBVersion = "4.11.2"
+val kafkaVersion = "0.10.1.0"
 
-lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.5" % "test"
-lazy val rocksDB = "org.rocksdb" % "rocksdbjni" % "4.9.0"
+lazy val kafka = Seq(
+   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
+   "org.apache.kafka" % "kafka-streams" % kafkaVersion,
+   "org.apache.kafka" % "kafka-streams" % kafkaVersion classifier "test",
+   "org.apache.kafka" %% "kafka" % kafkaVersion
+ )
 
-lazy val logging = Seq("log4j" % "log4j" % log4jVersion,
-  "org.slf4j" % "slf4j-api" % slf4jVersion,
-  "org.slf4j" % "slf4j-log4j12" % slf4jVersion)
+lazy val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+lazy val rocksDB = "org.rocksdb" % "rocksdbjni" % rocksDBVersion % "test"
+lazy val logging = Seq("log4j" % "log4j" % log4jVersion % "test",
+  "org.slf4j" % "slf4j-api" % slf4jVersion % "test",
+  "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test")
 
 lazy val mockedstreams = (project in file(".")).
   settings(commonSettings: _*).
@@ -27,7 +35,7 @@ lazy val mockedstreams = (project in file(".")).
     libraryDependencies ++= Seq(
       scalaTest,
       rocksDB
-    ) ++ logging
+    ) ++ kafka ++ logging
   )
 
 publishTo := {
@@ -45,23 +53,23 @@ publishArtifact in Test := false
 pomIncludeRepository := { _ => false }
 
 pomExtra := (
-  <url>http://your.project.url</url>
+  <url>https://www.madewithtea.com/pages/mockedstreams.html</url>
     <licenses>
       <license>
-        <name>BSD-style</name>
-        <url>http://www.opensource.org/licenses/bsd-license.php</url>
+        <name>Apache License Version 2.0</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0</url>
         <distribution>repo</distribution>
       </license>
     </licenses>
     <scm>
-      <url>git@github.com:your-account/your-project.git</url>
-      <connection>scm:git:git@github.com:your-account/your-project.git</connection>
+      <url>git@github.com:jpzk/mockedstreams.git</url>
+      <connection>scm:git:git@github.com:jpzk/mockedstreams.git</connection>
     </scm>
     <developers>
       <developer>
-        <id>you</id>
-        <name>Your Name</name>
-        <url>http://your.url</url>
+        <id>jpzk</id>
+        <name>Jendrik Poloczek</name>
+        <url>https://www.madewithtea.com</url>
       </developer>
     </developers>
   )
