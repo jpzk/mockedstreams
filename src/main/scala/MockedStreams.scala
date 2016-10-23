@@ -14,7 +14,7 @@
   * See the License for the specific language governing permissions and
   * limitations under the License.
   */
-package mwt.mockedstreams
+package com.madewithtea.mockedstreams
 
 import java.util.{Properties, UUID}
 
@@ -50,7 +50,7 @@ object MockedStreams {
     def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
       if (size <= 0)
         throw new ExpectedOutputIsEmpty
-      if (inputs.size == 0)
+      if (inputs.isEmpty)
         throw new NoInputSpecified
 
       val driver = stream
