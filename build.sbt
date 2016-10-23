@@ -15,9 +15,10 @@ val kafkaVersion = "0.10.1.0"
 
 lazy val kafka = Seq(
    "org.apache.kafka" % "kafka-clients" % kafkaVersion,
+   "org.apache.kafka" % "kafka-clients" % kafkaVersion classifier "test",
    "org.apache.kafka" % "kafka-streams" % kafkaVersion,
    "org.apache.kafka" % "kafka-streams" % kafkaVersion classifier "test",
-   "org.apache.kafka" %% "kafka" % kafkaVersion
+   "org.apache.kafka" %% "kafka" % kafkaVersion 
  )
 
 lazy val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
