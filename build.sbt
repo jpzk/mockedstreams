@@ -4,7 +4,6 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.11.8",
   description := "Topology Unit-Testing Library for Apache Kafka / Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
-  coverageEnabled := true,
   scalacOptions := Seq("-Xexperimental"))
 
 val log4jVersion = "1.2.17"
@@ -29,9 +28,6 @@ lazy val logging = Seq("log4j" % "log4j" % log4jVersion % "test",
 
 lazy val mockedstreams = (project in file(".")).
   settings(commonSettings: _*).
-  settings(
-    assemblyJarName in assembly := "mockedstreams.jar"
-  ).
   settings(
     libraryDependencies ++= Seq(
       scalaTest,
