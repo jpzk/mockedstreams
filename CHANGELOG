@@ -1,6 +1,10 @@
 # Change Log
 
-## Mocked Streams 1.0 (Practice Peace)
+## Mocked Streams 1.1.0 
+
+* Build against Apache Kafka 0.10.1.1
+
+## Mocked Streams 1.0.0
 
 * Support for Scala 2.11.8
 * Support for Apache Kafka 0.10.1.0
