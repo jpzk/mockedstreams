@@ -77,14 +77,14 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
   it should "assert correctly when processing multi input topology" in {
     import Fixtures.Multi._
 
-    val output = MockedStreams()
+    val builder = MockedStreams()
       .topology(topology1Output _)
       .input(InputATopic, strings, ints, inputA)
       .input(InputBTopic, strings, ints, inputB)
       .stores(Seq(StoreName))
-      .output(OutputATopic, strings, ints, expectedA.size)
 
-    output shouldEqual expectedA
+    builder.output(OutputATopic, strings, ints, expectedA.size) shouldEqual expectedA
+    builder.stateTable(StoreName) shouldEqual inputA.toMap
   }
 
   it should "assert correctly when processing multi input output topology" in {
@@ -101,6 +101,9 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
     builder.output(OutputBTopic, strings, ints, expectedB.size)
       .shouldEqual(expectedB)
+
+    builder.stateTable(StoreName)
+      .shouldEqual(inputA.toMap)
   }
 
   class LastInitializer extends Initializer[Integer] {

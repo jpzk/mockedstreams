@@ -16,6 +16,7 @@
   */
 package com.madewithtea.mockedstreams
 
+import collection.JavaConverters._
 import java.util.{Properties, UUID}
 
 import org.apache.kafka.common.serialization.Serde
@@ -68,6 +69,20 @@ object MockedStreams {
 
     def outputTable[K,V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
       output[K,V](topic, key, value, size).toMap
+    }
+
+    def stateTable(name: String) = {
+      if (inputs.isEmpty)
+        throw new NoInputSpecified
+
+      val driver = stream
+      produce(driver)
+
+      val store = driver.getKeyValueStore(name)
+      val records = store.all()
+      val list = records.asScala.toList.map { record => (record.key, record.value) }
+      records.close()
+      list.toMap
     }
 
     // state store is temporarily created in ProcessorTopologyTestDriver
