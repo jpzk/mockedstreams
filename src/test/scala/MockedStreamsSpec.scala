@@ -77,14 +77,17 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
   it should "assert correctly when processing multi input topology" in {
     import Fixtures.Multi._
 
-    val output = MockedStreams()
+    val builder = MockedStreams()
       .topology(topology1Output _)
       .input(InputATopic, strings, ints, inputA)
       .input(InputBTopic, strings, ints, inputB)
       .stores(Seq(StoreName))
-      .output(OutputATopic, strings, ints, expectedA.size)
+
+    val output = builder.output(OutputATopic, strings, ints, expectedA.size)
+    val state = builder.stateTable(StoreName)
 
     output shouldEqual expectedA
+    state shouldEqual inputA.toMap
   }
 
   it should "assert correctly when processing multi input output topology" in {
