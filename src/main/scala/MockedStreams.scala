@@ -22,6 +22,7 @@ import java.util.{Properties, UUID}
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.KStreamBuilder
+import org.apache.kafka.streams.state.ReadOnlyWindowStore
 import org.apache.kafka.test.ProcessorTopologyTestDriver
 
 object MockedStreams {
@@ -80,6 +81,21 @@ object MockedStreams {
 
       val store = driver.getKeyValueStore(name)
       val records = store.all()
+      val list = records.asScala.toList.map { record => (record.key, record.value) }
+      records.close()
+      list.toMap
+    }
+
+    // FIXME: timeTo: Long = Long.MaxValue
+    def windowStateTable[K, V](name: String, key: K, timeFrom: Long = 0, timeTo: Long = 100000000L) = {
+      if (inputs.isEmpty)
+        throw new NoInputSpecified
+
+      val driver = stream
+      produce(driver)
+
+      val store = driver.getStateStore(name).asInstanceOf[ReadOnlyWindowStore[K, V]]
+      val records = store.fetch(key, timeFrom, timeTo)
       val list = records.asScala.toList.map { record => (record.key, record.value) }
       records.close()
       list.toMap

@@ -16,9 +16,13 @@
   */
 package com.madewithtea.mockedstreams
 
+import java.util.Properties
+
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.Serdes
-import org.apache.kafka.streams.KeyValue
-import org.apache.kafka.streams.kstream.{Aggregator, Initializer, KStreamBuilder, ValueJoiner}
+import org.apache.kafka.streams.kstream._
+import org.apache.kafka.streams.processor.TimestampExtractor
+import org.apache.kafka.streams.{KeyValue, StreamsConfig}
 import org.scalatest.{FlatSpec, Matchers}
 
 class MockedStreamsSpec extends FlatSpec with Matchers {
@@ -106,6 +110,26 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       .shouldEqual(inputA.toMap)
   }
 
+
+  it should "assert correctly when processing windowed state output topology" in {
+    import Fixtures.Multi._
+
+    val props = new Properties
+    props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG, classOf[TimestampExtractors.CustomTimestampExtractor].getName)
+
+    val builder = MockedStreams()
+      .topology(topology3Output _)
+      .input(InputCTopic, strings, ints, inputC)
+      .stores(Seq(StoreName))
+      .config(props)
+
+    builder.windowStateTable(StoreName, "x")
+      .shouldEqual(expectedCx.toMap)
+
+    builder.windowStateTable(StoreName, "y")
+      .shouldEqual(expectedCy.toMap)
+  }
+
   class LastInitializer extends Initializer[Integer] {
     override def apply() = 0
   }
@@ -147,14 +171,18 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
       val inputA = Seq(("x", int(1)), ("y", int(2)))
       val inputB = Seq(("x", int(4)), ("y", int(3)))
+      val inputC = Seq(("x", int(1000)), ("x", int(1000)), ("x", int(2000)), ("y", int(1000)))
       val expectedA = Seq(("x", int(5)), ("y", int(5)))
       val expectedB = Seq(("x", int(3)), ("y", int(1)))
+      val expectedCx = Seq((1000, 2), (2000, 1))
+      val expectedCy = Seq((1000, 1))
 
       val strings = Serdes.String()
       val ints = Serdes.Integer()
 
       val InputATopic = "inputA"
       val InputBTopic = "inputB"
+      val InputCTopic = "inputC"
       val OutputATopic = "outputA"
       val OutputBTopic = "outputB"
       val StoreName = "store"
@@ -187,10 +215,30 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
         streamB.leftJoin(table, new SubJoiner(), strings, ints)
           .to(strings, ints, OutputBTopic)
       }
+
+      def topology3Output(builder: KStreamBuilder) = {
+
+        val streamA = builder.stream(strings, ints, InputCTopic)
+
+        streamA.groupByKey(strings, ints).count(
+          TimeWindows.of(1000),
+          StoreName)
+      }
     }
 
   }
 
 }
 
-
+object TimestampExtractors {
+  class CustomTimestampExtractor extends TimestampExtractor {
+    override def extract(record: ConsumerRecord[AnyRef, AnyRef]): Long = {
+      record.value match {
+        case value: Integer =>
+          value.toLong
+        case _ =>
+          record.timestamp()
+      }
+    }
+  }
+}
