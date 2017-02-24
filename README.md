@@ -11,6 +11,7 @@ Mocked Streams 1.0 [(git)](https://github.com/jpzk/mockedstreams) is a library f
 
 | Mocked Streams Version        | Apache Kafka Version           | 
 | ------------- |-------------| 
+| 1.2.0      | 0.10.2 | 
 | 1.1.0      | 0.10.1.1 | 
 | 1.0.0      | 0.10.1.0      |    
 
@@ -44,6 +45,16 @@ It also allows you to have multiple input and output streams. If your topology u
 
     mstreams.output("out-a", strings, ints, expA.size) shouldEqual(expectedA)
     mstreams.output("out-b", strings, ints, expB.size) shouldEqual(expectedB)
+
+## Testing the State Store Content
+
+     val mstreams = MockedStreams()
+      .topology { builder => builder.stream(...) [...] }
+      .input("in-a", strings, ints, inputA)
+      .input("in-b", strings, ints, inputB)
+      .stores(Seq("store-name"))
+
+     mstreams.stateTable("store-name") shouldEqual Map('a' -> 1) 
  
 ## Custom Streams Configuration
 

@@ -102,8 +102,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     builder.output(OutputBTopic, strings, ints, expectedB.size)
       .shouldEqual(expectedB)
 
-    builder.stateTable(StoreName)
-      .shouldEqual(inputA.toMap)
+    builder.stateTable(StoreName) shouldEqual inputA.toMap
   }
 
   class LastInitializer extends Initializer[Integer] {
