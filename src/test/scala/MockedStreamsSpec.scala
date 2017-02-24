@@ -136,7 +136,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
       def topology(builder: KStreamBuilder) = {
         builder.stream(strings, strings, InputTopic)
-          .map((k, v) => new KeyValue(k, v.toUpperCase))
+          .map[String, String]((k, v) => new KeyValue(k, v.toUpperCase))
           .to(strings, strings, OutputTopic)
       }
     }
@@ -167,7 +167,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           new LastInitializer,
           new LastAggregator, ints, StoreName)
 
-        streamB.leftJoin(table, new AddJoiner(), strings, ints)
+        streamB.leftJoin[Integer, Integer](table, new AddJoiner(), strings, ints)
           .to(strings, ints, OutputATopic)
       }
 
@@ -181,10 +181,10 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           ints,
           StoreName)
 
-        streamB.leftJoin(table, new AddJoiner(), strings, ints)
+        streamB.leftJoin[Integer, Integer](table, new AddJoiner(), strings, ints)
           .to(strings, ints, OutputATopic)
 
-        streamB.leftJoin(table, new SubJoiner(), strings, ints)
+        streamB.leftJoin[Integer, Integer](table, new SubJoiner(), strings, ints)
           .to(strings, ints, OutputBTopic)
       }
     }
