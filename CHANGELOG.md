@@ -1,4 +1,4 @@
-# Change Log
+# Changelog
 
 ## Mocked Streams 1.2.0
 
