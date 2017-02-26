@@ -4,7 +4,7 @@
 
 * Build against Apache Kafka 0.10.2
 * Added support for Scala 2.12.1
-* Added .stateTable and .windowStateTable method for retrieving the contant of the state store as Map
+* Added .stateTable and .windowStateTable method for retrieving the content of the state stores as Map
 * Added contributors file
 * Removed dependencies to Log4j and Slf4j
 * Updated RocksDB version to 5.0.1
