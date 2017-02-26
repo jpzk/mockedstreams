@@ -114,10 +114,11 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     import Fixtures.Multi._
 
     val props = new Properties
-    props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG, classOf[TimestampExtractors.CustomTimestampExtractor].getName)
+    props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
+      classOf[TimestampExtractors.CustomTimestampExtractor].getName)
 
     val builder = MockedStreams()
-      .topology(topology3Output _)
+      .topology(topology1WindowOutput _)
       .input(InputCTopic, strings, ints, inputC)
       .stores(Seq(StoreName))
       .config(props)
@@ -170,11 +171,11 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
       val inputA = Seq(("x", int(1)), ("y", int(2)))
       val inputB = Seq(("x", int(4)), ("y", int(3)))
-      val inputC = Seq(("x", int(1000)), ("x", int(1000)), ("x", int(2000)), ("y", int(1000)))
+      val inputC = Seq(("x", int(1)), ("x", int(1)), ("x", int(2)), ("y", int(1)))
       val expectedA = Seq(("x", int(5)), ("y", int(5)))
       val expectedB = Seq(("x", int(3)), ("y", int(1)))
-      val expectedCx = Seq((1000, 2), (2000, 1))
-      val expectedCy = Seq((1000, 1))
+      val expectedCx = Seq((1, 2), (2, 1))
+      val expectedCy = Seq((1, 1))
 
       val strings = Serdes.String()
       val ints = Serdes.Integer()
@@ -198,6 +199,13 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           .to(strings, ints, OutputATopic)
       }
 
+      def topology1WindowOutput(builder: KStreamBuilder) = {
+        val streamA = builder.stream(strings, ints, InputCTopic)
+        streamA.groupByKey(strings, ints).count(
+          TimeWindows.of(1),
+          StoreName)
+      }
+
       def topology2Output(builder: KStreamBuilder) = {
         val streamA = builder.stream(strings, ints, InputATopic)
         val streamB = builder.stream(strings, ints, InputBTopic)
@@ -214,30 +222,19 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
         streamB.leftJoin[Integer, Integer](table, new SubJoiner(), strings, ints)
           .to(strings, ints, OutputBTopic)
       }
-
-      def topology3Output(builder: KStreamBuilder) = {
-
-        val streamA = builder.stream(strings, ints, InputCTopic)
-
-        streamA.groupByKey(strings, ints).count(
-          TimeWindows.of(1000),
-          StoreName)
-      }
     }
-
   }
-
 }
 
 object TimestampExtractors {
+
   class CustomTimestampExtractor extends TimestampExtractor {
-    override def extract(record: ConsumerRecord[AnyRef, AnyRef]): Long = {
+    override def extract(record: ConsumerRecord[AnyRef, AnyRef], previous: Long) = {
       record.value match {
-        case value: Integer =>
-          value.toLong
-        case _ =>
-          record.timestamp()
+        case value: Integer => value.toLong
+        case _ => record.timestamp()
       }
     }
   }
+
 }
