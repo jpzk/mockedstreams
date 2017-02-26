@@ -46,9 +46,9 @@ It also allows you to have multiple input and output streams. If your topology u
     mstreams.output("out-a", strings, ints, expA.size) shouldEqual(expectedA)
     mstreams.output("out-b", strings, ints, expB.size) shouldEqual(expectedB)
 
-## State Store Content
+## State Store 
 
-When you define your state stores via .stores(stores: Seq[String]) since 1.2 you are able to verify the state store content:  
+When you define your state stores via .stores(stores: Seq[String]) since 1.2, you are able to verify the state store content via the .stateTable(name: String) method:  
 
     import com.madewithtea.mockedstreams.MockedStreams
 
@@ -59,7 +59,26 @@ When you define your state stores via .stores(stores: Seq[String]) since 1.2 you
       .stores(Seq("store-name"))
 
      mstreams.stateTable("store-name") shouldEqual Map('a' -> 1) 
- 
+
+## Window State Store 
+
+When you define your state stores via .stores(stores: Seq[String]) since 1.2 and added the timestamp extractor to the config, you are able to verify the window state store content via the .windowStateTable(name: String, key: K) method:  
+
+    import com.madewithtea.mockedstreams.MockedStreams
+
+    val props = new Properties
+    props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
+      classOf[TimestampExtractors.CustomTimestampExtractor].getName)
+
+    val builder = MockedStreams()
+      .topology(topology1WindowOutput)
+      .input("in-a", strings, ints, inputA)
+      .stores(Seq("store-name"))
+      .config(props)
+
+    builder.windowStateTable("store-name", "x") shouldEqual someMapX
+    builder.windowStateTable("store-name", "y") shouldEqual someMapY
+
 ## Custom Streams Configuration
 
 Sometimes you need to pass a custom configuration to Kafka Streams:
