@@ -4,11 +4,12 @@
 
 * Build against Apache Kafka 0.10.2
 * Added support for Scala 2.12.1
-* Added .stateTable method for retrieving the contant of the state store as Map
+* Added .stateTable and .windowStateTable method for retrieving the contant of the state store as Map
 * Added contributors file
 * Removed dependencies to Log4j and Slf4j
 * Updated RocksDB version to 5.0.1
 * Updated ScalaTest version to 3.0.1
+* Added more assertions in the test for input validation 
 
 ## Mocked Streams 1.1.0 
 
