@@ -16,7 +16,6 @@
   */
 package com.madewithtea.mockedstreams
 
-import collection.JavaConverters._
 import java.util.{Properties, UUID}
 
 import org.apache.kafka.common.serialization.Serde
@@ -24,6 +23,8 @@ import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.KStreamBuilder
 import org.apache.kafka.streams.state.ReadOnlyWindowStore
 import org.apache.kafka.test.ProcessorTopologyTestDriver
+
+import scala.collection.JavaConverters._
 
 object MockedStreams {
 
@@ -49,33 +50,25 @@ object MockedStreams {
       this.copy(inputs = inputs + (topic -> Input(in)))
     }
 
-    def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
-      if (size <= 0)
-        throw new ExpectedOutputIsEmpty
-      if (inputs.isEmpty)
-        throw new NoInputSpecified
+    def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = withValidInput {
+        if (size <= 0) throw new ExpectedOutputIsEmpty
 
-      val driver = stream
-      produce(driver)
+        val driver = stream
+        produce(driver)
 
-      val keyDes = key.deserializer
-      val valDes = value.deserializer
-      (0 until size).flatMap { i =>
-        Option(driver.readOutput(topic, keyDes, valDes)) match {
-          case Some(record) => Some((record.key, record.value))
-          case None => None
+        (0 until size).flatMap { i =>
+          Option(driver.readOutput(topic, key.deserializer, value.deserializer)) match {
+            case Some(record) => Some((record.key, record.value))
+            case None => None
+          }
         }
       }
+
+    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int): Map[K, V] = {
+      output[K, V](topic, key, value, size).toMap
     }
 
-    def outputTable[K,V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
-      output[K,V](topic, key, value, size).toMap
-    }
-
-    def stateTable(name: String) = {
-      if (inputs.isEmpty)
-        throw new NoInputSpecified
-
+    def stateTable(name: String): Map[Nothing, Nothing] = withValidInput {
       val driver = stream
       produce(driver)
 
@@ -86,10 +79,8 @@ object MockedStreams {
       list.toMap
     }
 
-    // FIXME: timeTo: Long = Long.MaxValue
-    def windowStateTable[K, V](name: String, key: K, timeFrom: Long = 0, timeTo: Long = 100000000L) = {
-      if (inputs.isEmpty)
-        throw new NoInputSpecified
+    def windowStateTable[K, V](name: String, key: K, timeFrom: Long = 0,
+                               timeTo: Long = Long.MaxValue) = withValidInput {
 
       val driver = stream
       produce(driver)
@@ -125,6 +116,13 @@ object MockedStreams {
         }
       }
     }
+
+    private def withValidInput[T](f: => T): T = {
+      if (inputs.isEmpty)
+        throw new NoInputSpecified
+      f
+    }
+
   }
 
   class NoTopologySpecified extends Exception("No topology specified. Call topology() on builder.")

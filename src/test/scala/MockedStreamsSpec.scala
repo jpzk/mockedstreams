@@ -29,38 +29,47 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
   behavior of "MockedStreams"
 
-  it should "throw exception when expected size is <= 0" in {
+  it should "throw exception when expected size in output methods is <= 0" in {
     import Fixtures.Uppercase._
     import MockedStreams.ExpectedOutputIsEmpty
 
-    an[ExpectedOutputIsEmpty] should be thrownBy
-      MockedStreams()
-        .topology(topology _)
-        .input(InputTopic, strings, strings, input)
-        .output(OutputTopic, strings, strings, 0)
+    val spec = MockedStreams()
+      .topology(topology)
+      .input(InputTopic, strings, strings, input)
 
-    an[ExpectedOutputIsEmpty] should be thrownBy
-      MockedStreams()
-        .topology(topology _)
-        .input(InputTopic, strings, strings, input)
-        .output(OutputTopic, strings, strings, -1)
+    Seq(-1, 0).foreach { size =>
+      an[ExpectedOutputIsEmpty] should be thrownBy
+        spec.output(OutputTopic, strings, strings, size)
+
+      an[ExpectedOutputIsEmpty] should be thrownBy
+        spec.outputTable(OutputTopic, strings, strings, size)
+    }
   }
 
-  it should "throw exception when no input specified" in {
+  it should "throw exception when no input specified for all output and state methods" in {
     import Fixtures.Uppercase._
     import MockedStreams.NoInputSpecified
 
+    val t = MockedStreams().topology(topology)
+
     an[NoInputSpecified] should be thrownBy
-      MockedStreams()
-        .topology(topology _)
-        .output(OutputTopic, strings, strings, expected.size)
+      t.output(OutputTopic, strings, strings, expected.size)
+
+    an[NoInputSpecified] should be thrownBy
+      t.outputTable(OutputTopic, strings, strings, expected.size)
+
+    an[NoInputSpecified] should be thrownBy
+      t.stateTable("state-table")
+
+    an[NoInputSpecified] should be thrownBy
+      t.windowStateTable("window-state-table", 0)
   }
 
   it should "assert correctly when processing strings to uppercase" in {
     import Fixtures.Uppercase._
 
     val output = MockedStreams()
-      .topology(topology _)
+      .topology(topology)
       .input(InputTopic, strings, strings, input)
       .output(OutputTopic, strings, strings, expected.size)
 
@@ -71,7 +80,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     import Fixtures.Uppercase._
 
     val output = MockedStreams()
-      .topology(topology _)
+      .topology(topology)
       .input(InputTopic, strings, strings, input)
       .outputTable(OutputTopic, strings, strings, expected.size)
 
@@ -82,7 +91,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     import Fixtures.Multi._
 
     val builder = MockedStreams()
-      .topology(topology1Output _)
+      .topology(topology1Output)
       .input(InputATopic, strings, ints, inputA)
       .input(InputBTopic, strings, ints, inputB)
       .stores(Seq(StoreName))
@@ -95,7 +104,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     import Fixtures.Multi._
 
     val builder = MockedStreams()
-      .topology(topology2Output _)
+      .topology(topology2Output)
       .input(InputATopic, strings, ints, inputA)
       .input(InputBTopic, strings, ints, inputB)
       .stores(Seq(StoreName))
@@ -109,7 +118,6 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     builder.stateTable(StoreName) shouldEqual inputA.toMap
   }
 
-
   it should "assert correctly when processing windowed state output topology" in {
     import Fixtures.Multi._
 
@@ -118,7 +126,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       classOf[TimestampExtractors.CustomTimestampExtractor].getName)
 
     val builder = MockedStreams()
-      .topology(topology1WindowOutput _)
+      .topology(topology1WindowOutput)
       .input(InputCTopic, strings, ints, inputC)
       .stores(Seq(StoreName))
       .config(props)
@@ -223,7 +231,9 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           .to(strings, ints, OutputBTopic)
       }
     }
+
   }
+
 }
 
 object TimestampExtractors {
