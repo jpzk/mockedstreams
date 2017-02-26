@@ -70,14 +70,14 @@ When you define your state stores via .stores(stores: Seq[String]) since 1.2 and
     props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
       classOf[TimestampExtractors.CustomTimestampExtractor].getName)
 
-    val builder = MockedStreams()
-      .topology(topology1WindowOutput)
+    val mstreams = MockedStreams()
+      .topology { builder => builder.stream(...) [...] }
       .input("in-a", strings, ints, inputA)
       .stores(Seq("store-name"))
       .config(props)
 
-    builder.windowStateTable("store-name", "x") shouldEqual someMapX
-    builder.windowStateTable("store-name", "y") shouldEqual someMapY
+    mstreams.windowStateTable("store-name", "x") shouldEqual someMapX
+    mstreams.windowStateTable("store-name", "y") shouldEqual someMapY
 
 ## Custom Streams Configuration
 
