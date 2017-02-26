@@ -143,15 +143,15 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
   }
 
   class LastAggregator extends Aggregator[String, Integer, Integer] {
-    override def apply(k: String, v: Integer, t: Integer): Integer = v
+    override def apply(k: String, v: Integer, t: Integer) = v
   }
 
   class AddJoiner extends ValueJoiner[Integer, Integer, Integer] {
-    override def apply(v1: Integer, v2: Integer): Integer = v1 + v2
+    override def apply(v1: Integer, v2: Integer) = v1 + v2
   }
 
   class SubJoiner extends ValueJoiner[Integer, Integer, Integer] {
-    override def apply(v1: Integer, v2: Integer): Integer = v1 - v2
+    override def apply(v1: Integer, v2: Integer) = v1 - v2
   }
 
   object Fixtures {
@@ -239,11 +239,9 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 object TimestampExtractors {
 
   class CustomTimestampExtractor extends TimestampExtractor {
-    override def extract(record: ConsumerRecord[AnyRef, AnyRef], previous: Long) = {
-      record.value match {
-        case value: Integer => value.toLong
-        case _ => record.timestamp()
-      }
+    override def extract(record: ConsumerRecord[AnyRef, AnyRef], previous: Long) = record.value match {
+      case value: Integer => value.toLong
+      case _ => record.timestamp()
     }
   }
 
