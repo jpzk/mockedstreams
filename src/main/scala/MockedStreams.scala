@@ -22,7 +22,7 @@ import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.KStreamBuilder
 import org.apache.kafka.streams.state.ReadOnlyWindowStore
-import org.apache.kafka.test.ProcessorTopologyTestDriver
+import org.apache.kafka.test.{ProcessorTopologyTestDriver => Driver}
 
 import scala.collection.JavaConverters._
 
@@ -50,12 +50,9 @@ object MockedStreams {
       this.copy(inputs = inputs + (topic -> Input(in)))
     }
 
-    def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = withValidInput {
-        if (size <= 0) throw new ExpectedOutputIsEmpty
-
-        val driver = stream
-        produce(driver)
-
+    def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
+      if (size <= 0) throw new ExpectedOutputIsEmpty
+      withProcessedDriver { driver => 
         (0 until size).flatMap { i =>
           Option(driver.readOutput(topic, key.deserializer, value.deserializer)) match {
             case Some(record) => Some((record.key, record.value))
@@ -63,28 +60,20 @@ object MockedStreams {
           }
         }
       }
-
-    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int): Map[K, V] = {
-      output[K, V](topic, key, value, size).toMap
     }
 
-    def stateTable(name: String): Map[Nothing, Nothing] = withValidInput {
-      val driver = stream
-      produce(driver)
+    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int): Map[K, V] = 
+      output[K, V](topic, key, value, size).toMap
 
-      val store = driver.getKeyValueStore(name)
-      val records = store.all()
+    def stateTable(name: String): Map[Nothing, Nothing] = withProcessedDriver { driver => 
+      val records = driver.getKeyValueStore(name).all()
       val list = records.asScala.toList.map { record => (record.key, record.value) }
       records.close()
       list.toMap
     }
 
     def windowStateTable[K, V](name: String, key: K, timeFrom: Long = 0,
-                               timeTo: Long = Long.MaxValue) = withValidInput {
-
-      val driver = stream
-      produce(driver)
-
+                               timeTo: Long = Long.MaxValue) = withProcessedDriver { driver =>
       val store = driver.getStateStore(name).asInstanceOf[ReadOnlyWindowStore[K, V]]
       val records = store.fetch(key, timeFrom, timeTo)
       val list = records.asScala.toList.map { record => (record.key, record.value) }
@@ -106,10 +95,10 @@ object MockedStreams {
         case _ => throw new NoTopologySpecified
       }
 
-      new ProcessorTopologyTestDriver(new StreamsConfig(props), builder, stateStores: _*)
+      new Driver(new StreamsConfig(props), builder, stateStores: _*)
     }
 
-    private def produce(driver: ProcessorTopologyTestDriver) = {
+    private def produce(driver: Driver) = {
       inputs.foreach { case (topic, input) =>
         input.seq.foreach { case (key, value) =>
           driver.process(topic, key, value)
@@ -117,12 +106,16 @@ object MockedStreams {
       }
     }
 
-    private def withValidInput[T](f: => T): T = {
-      if (inputs.isEmpty)
+    private def withProcessedDriver[T](f: Driver => T): T = {
+      if(inputs.isEmpty)
         throw new NoInputSpecified
-      f
-    }
 
+      val driver = stream
+      produce(driver)
+      val result: T = f(driver)
+      driver.close
+      result
+    }
   }
 
   class NoTopologySpecified extends Exception("No topology specified. Call topology() on builder.")

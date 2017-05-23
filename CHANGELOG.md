@@ -1,5 +1,10 @@
 # Changelog
 
+## Mocked Streams 1.2.1
+
+* Build against Apache Kafka 0.10.2.1
+* Added calling of clean up method after driver run 
+
 ## Mocked Streams 1.2.0
 
 * Build against Apache Kafka 0.10.2
