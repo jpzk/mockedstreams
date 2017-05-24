@@ -8,7 +8,7 @@ lazy val commonSettings = Seq(
   organizationHomepage := Some(url("https://www.madewithtea.com")),
   scalacOptions := Seq("-Xexperimental"))
 
-val scalaTestVersion = "3.0.1"
+val scalaTestVersion = "3.0.2"
 val rocksDBVersion = "5.0.1"
 val kafkaVersion = "0.10.2.1"
 
