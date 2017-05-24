@@ -5,6 +5,7 @@
 * Build against Apache Kafka 0.10.2.1
 * Added calling of clean up method after driver run 
 * Updated ScalaTest version to 3.0.2
+* Updated Scala Versions 
 * Added CodeCov and SCoverage coverage report
 
 ## Mocked Streams 1.2.0
