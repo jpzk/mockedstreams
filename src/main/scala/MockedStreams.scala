@@ -95,7 +95,7 @@ object MockedStreams {
         case _ => throw new NoTopologySpecified
       }
 
-      new Driver(new StreamsConfig(props), builder, stateStores: _*)
+      new Driver(new StreamsConfig(props), builder)
     }
 
     private def produce(driver: Driver) = {

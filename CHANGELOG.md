@@ -1,5 +1,9 @@
 # Changelog
 
+## Mocked Streams 1.2.2
+
+* Build against Apache Kafka 0.11.0.0
+
 ## Mocked Streams 1.2.1
 
 * Build against Apache Kafka 0.10.2.1
