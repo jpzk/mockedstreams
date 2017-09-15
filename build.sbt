@@ -10,7 +10,7 @@ lazy val commonSettings = Seq(
 
 val scalaTestVersion = "3.0.2"
 val rocksDBVersion = "5.0.1"
-val kafkaVersion = "0.11.0.0"
+val kafkaVersion = "0.11.0.1"
 
 lazy val kafka = Seq(
    "org.apache.kafka" % "kafka-clients" % kafkaVersion,

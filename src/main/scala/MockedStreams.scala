@@ -30,12 +30,13 @@ object MockedStreams {
 
   def apply() = Builder()
 
-  case class Input(seq: Seq[(Array[Byte], Array[Byte])])
+  case class Event(topic: String, key: Array[Byte], value: Array[Byte])
 
   case class Builder(topology: Option[(KStreamBuilder => Unit)] = None,
                      configuration: Properties = new Properties(),
                      stateStores: Seq[String] = Seq(),
-                     inputs: Map[String, Input] = Map()) {
+                     inputs: List[Event] = List.empty) {
+
 
     def config(configuration: Properties) = this.copy(configuration = configuration)
 
@@ -43,11 +44,15 @@ object MockedStreams {
 
     def stores(stores: Seq[String]) = this.copy(stateStores = stores)
 
-    def input[K, V](topic: String, key: Serde[K], value: Serde[V], seq: Seq[(K, V)]) = {
+    def input[K, V](topic: String, key: Serde[K], value: Serde[V], newInput: Seq[(K, V)]) = {
       val keySer = key.serializer
       val valSer = value.serializer
-      val in = seq.map { case (k, v) => (keySer.serialize(topic, k), valSer.serialize(topic, v)) }
-      this.copy(inputs = inputs + (topic -> Input(in)))
+
+      val updatedInputs = newInput.foldLeft(inputs) {
+        case (events, (k, v)) => Event(topic, keySer.serialize(topic, k), valSer.serialize(topic, v)) :: events
+      }
+
+      this.copy(inputs = updatedInputs)
     }
 
     def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
@@ -99,10 +104,9 @@ object MockedStreams {
     }
 
     private def produce(driver: Driver) = {
-      inputs.foreach { case (topic, input) =>
-        input.seq.foreach { case (key, value) =>
+      inputs.reverse.foreach{
+        case Event(topic, key, value) =>
           driver.process(topic, key, value)
-        }
       }
     }
 
@@ -125,5 +129,3 @@ object MockedStreams {
   class ExpectedOutputIsEmpty extends Exception("Output size needs to be greater than 0.")
 
 }
-
-

@@ -118,6 +118,25 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     builder.stateTable(StoreName) shouldEqual inputA.toMap
   }
 
+  it should "assert correctly when joining events sent to 2 Ktables in a specific order" in {
+    import Fixtures.Multi._
+
+    val firstInputForTopicA = Seq(("x", int(1)), ("y", int(2)))
+    val firstInputForTopicB = Seq(("x", int(4)), ("y", int(3)), ("y", int(5)))
+    val secondInputForTopicA = Seq(("y", int(4)))
+
+    val expectedOutput = Seq(("x", 5), ("y", 5), ("y", 7), ("y", 9))
+
+    val builder = MockedStreams()
+      .topology(topologyTables)
+      .input(InputATopic, strings, ints, firstInputForTopicA)
+      .input(InputBTopic, strings, ints, firstInputForTopicB)
+      .input(InputATopic, strings, ints, secondInputForTopicA)
+
+    builder.output(OutputATopic, strings, ints, expectedOutput.size)
+      .shouldEqual(expectedOutput)
+  }
+
   it should "assert correctly when processing windowed state output topology" in {
     import Fixtures.Multi._
 
@@ -194,6 +213,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val OutputATopic = "outputA"
       val OutputBTopic = "outputB"
       val StoreName = "store"
+      val Store2Name = "store2"
 
       def topology1Output(builder: KStreamBuilder) = {
         val streamA = builder.stream(strings, ints, InputATopic)
@@ -204,6 +224,18 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           new LastAggregator, ints, StoreName)
 
         streamB.leftJoin[Integer, Integer](table, new AddJoiner(), strings, ints)
+          .to(strings, ints, OutputATopic)
+      }
+
+      def topology1Outputbis(builder: KStreamBuilder) = {
+        val streamA = builder.stream(strings, ints, InputATopic)
+        val streamB = builder.stream(strings, ints, InputBTopic)
+
+        val table = streamB.groupByKey(strings, ints).aggregate(
+          new LastInitializer,
+          new LastAggregator, ints, StoreName)
+
+        streamA.leftJoin[Integer, Integer](table, new AddJoiner(), strings, ints)
           .to(strings, ints, OutputATopic)
       }
 
@@ -229,6 +261,29 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
         streamB.leftJoin[Integer, Integer](table, new SubJoiner(), strings, ints)
           .to(strings, ints, OutputBTopic)
+      }
+
+      def topologyTables(builder: KStreamBuilder) = {
+        val streamA = builder.stream(strings, ints, InputATopic)
+        val streamB = builder.stream(strings, ints, InputBTopic)
+
+        val tableA = streamA.groupByKey(strings, ints).aggregate(
+          new LastInitializer,
+          new LastAggregator,
+          ints,
+          StoreName)
+
+        val tableB = streamB.groupByKey(strings, ints).aggregate(
+          new LastInitializer,
+          new LastAggregator,
+          ints,
+          Store2Name)
+
+        val resultTable = tableA.join[Integer,Integer](tableB, new AddJoiner)
+
+        resultTable
+          .toStream
+          .to(strings, ints, OutputATopic)
       }
     }
 
