@@ -227,18 +227,6 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           .to(strings, ints, OutputATopic)
       }
 
-      def topology1Outputbis(builder: KStreamBuilder) = {
-        val streamA = builder.stream(strings, ints, InputATopic)
-        val streamB = builder.stream(strings, ints, InputBTopic)
-
-        val table = streamB.groupByKey(strings, ints).aggregate(
-          new LastInitializer,
-          new LastAggregator, ints, StoreName)
-
-        streamA.leftJoin[Integer, Integer](table, new AddJoiner(), strings, ints)
-          .to(strings, ints, OutputATopic)
-      }
-
       def topology1WindowOutput(builder: KStreamBuilder) = {
         val streamA = builder.stream(strings, ints, InputCTopic)
         streamA.groupByKey(strings, ints).count(
