@@ -30,12 +30,12 @@ object MockedStreams {
 
   def apply() = Builder()
 
-  case class Input(seq: Seq[(Array[Byte], Array[Byte])])
+  case class Record(topic: String, key: Array[Byte], value: Array[Byte])
 
   case class Builder(topology: Option[(KStreamBuilder => Unit)] = None,
                      configuration: Properties = new Properties(),
                      stateStores: Seq[String] = Seq(),
-                     inputs: Map[String, Input] = Map()) {
+                     inputs: List[Record] = List.empty) {
 
     def config(configuration: Properties) = this.copy(configuration = configuration)
 
@@ -43,16 +43,22 @@ object MockedStreams {
 
     def stores(stores: Seq[String]) = this.copy(stateStores = stores)
 
-    def input[K, V](topic: String, key: Serde[K], value: Serde[V], seq: Seq[(K, V)]) = {
+    def input[K, V](topic: String, key: Serde[K], value: Serde[V], newRecords: Seq[(K, V)]) = {
       val keySer = key.serializer
       val valSer = value.serializer
-      val in = seq.map { case (k, v) => (keySer.serialize(topic, k), valSer.serialize(topic, v)) }
-      this.copy(inputs = inputs + (topic -> Input(in)))
+
+      val updatedRecords = newRecords.foldLeft(inputs) {
+        case (events, (k, v)) =>
+          val newRecord = Record(topic, keySer.serialize(topic, k), valSer.serialize(topic, v))
+          newRecord :: events
+      }
+
+      this.copy(inputs = updatedRecords)
     }
 
     def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
       if (size <= 0) throw new ExpectedOutputIsEmpty
-      withProcessedDriver { driver => 
+      withProcessedDriver { driver =>
         (0 until size).flatMap { i =>
           Option(driver.readOutput(topic, key.deserializer, value.deserializer)) match {
             case Some(record) => Some((record.key, record.value))
@@ -62,10 +68,10 @@ object MockedStreams {
       }
     }
 
-    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int): Map[K, V] = 
+    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int): Map[K, V] =
       output[K, V](topic, key, value, size).toMap
 
-    def stateTable(name: String): Map[Nothing, Nothing] = withProcessedDriver { driver => 
+    def stateTable(name: String): Map[Nothing, Nothing] = withProcessedDriver { driver =>
       val records = driver.getKeyValueStore(name).all()
       val list = records.asScala.toList.map { record => (record.key, record.value) }
       records.close()
@@ -98,11 +104,10 @@ object MockedStreams {
       new Driver(new StreamsConfig(props), builder)
     }
 
-    private def produce(driver: Driver) = {
-      inputs.foreach { case (topic, input) =>
-        input.seq.foreach { case (key, value) =>
+    private def produce(driver: Driver): Unit = {
+      inputs.reverse.foreach{
+        case Record(topic, key, value) =>
           driver.process(topic, key, value)
-        }
       }
     }
 
@@ -125,5 +130,3 @@ object MockedStreams {
   class ExpectedOutputIsEmpty extends Exception("Output size needs to be greater than 0.")
 
 }
-
-
