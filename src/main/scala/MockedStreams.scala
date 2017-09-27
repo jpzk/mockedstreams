@@ -50,7 +50,7 @@ object MockedStreams {
       val updatedRecords = newRecords.foldLeft(inputs) {
         case (events, (k, v)) =>
           val newRecord = Record(topic, keySer.serialize(topic, k), valSer.serialize(topic, v))
-          newRecord :: events
+          events :+ newRecord 
       }
 
       this.copy(inputs = updatedRecords)
@@ -105,7 +105,7 @@ object MockedStreams {
     }
 
     private def produce(driver: Driver): Unit = {
-      inputs.reverse.foreach{
+      inputs.foreach{
         case Record(topic, key, value) =>
           driver.process(topic, key, value)
       }
