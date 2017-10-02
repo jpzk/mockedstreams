@@ -1,5 +1,12 @@
 # Changelog
 
+## Mocked Streams 1.4.0
+
+* Build against Apache Kafka 0.11.0.1
+* Added record order and multiple emissions by Svend Vanderveken
+* Updated SBT to 1.0.2
+* Added Svend Vanderveken to CONTRIBUTORS.md
+
 ## Mocked Streams 1.2.2
 
 * Build against Apache Kafka 0.11.0.0
