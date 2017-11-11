@@ -17,10 +17,11 @@
 package com.madewithtea.mockedstreams
 
 import java.util.Properties
-
+import org.apache.kafka.streams.Consumed
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.kstream._
+import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.processor.TimestampExtractor
 import org.apache.kafka.streams.{KeyValue, StreamsConfig}
 import org.scalatest.{FlatSpec, Matchers}
@@ -180,13 +181,13 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val expected = Seq(("x", "V1"), ("y", "V2"))
 
       val strings = Serdes.String()
-      val ints = Serdes.Integer()
-
+      val serdes = Consumed.`with`(strings, strings)
+        
       val InputTopic = "input"
       val OutputTopic = "output"
 
-      def topology(builder: KStreamBuilder) = {
-        builder.stream(strings, strings, InputTopic)
+      def topology(builder: StreamsBuilder) = {
+        builder.stream(InputTopic, serdes)
           .map[String, String]((k, v) => new KeyValue(k, v.toUpperCase))
           .to(strings, strings, OutputTopic)
       }
@@ -206,6 +207,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
       val strings = Serdes.String()
       val ints = Serdes.Integer()
+      val serdes = Consumed.`with`(strings, ints)
 
       val InputATopic = "inputA"
       val InputBTopic = "inputB"
@@ -215,9 +217,9 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val StoreName = "store"
       val Store2Name = "store2"
 
-      def topology1Output(builder: KStreamBuilder) = {
-        val streamA = builder.stream(strings, ints, InputATopic)
-        val streamB = builder.stream(strings, ints, InputBTopic)
+      def topology1Output(builder: StreamsBuilder) = {
+        val streamA = builder.stream(InputATopic, serdes)
+        val streamB = builder.stream(InputBTopic, serdes)
 
         val table = streamA.groupByKey(strings, ints).aggregate(
           new LastInitializer,
@@ -227,16 +229,16 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           .to(strings, ints, OutputATopic)
       }
 
-      def topology1WindowOutput(builder: KStreamBuilder) = {
-        val streamA = builder.stream(strings, ints, InputCTopic)
+      def topology1WindowOutput(builder: StreamsBuilder) = {
+        val streamA = builder.stream(InputCTopic, serdes)
         streamA.groupByKey(strings, ints).count(
           TimeWindows.of(1),
           StoreName)
       }
 
-      def topology2Output(builder: KStreamBuilder) = {
-        val streamA = builder.stream(strings, ints, InputATopic)
-        val streamB = builder.stream(strings, ints, InputBTopic)
+      def topology2Output(builder: StreamsBuilder) = {
+        val streamA = builder.stream(InputATopic, serdes)
+        val streamB = builder.stream(InputBTopic, serdes)
 
         val table = streamA.groupByKey(strings, ints).aggregate(
           new LastInitializer,
@@ -251,9 +253,9 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           .to(strings, ints, OutputBTopic)
       }
 
-      def topologyTables(builder: KStreamBuilder) = {
-        val streamA = builder.stream(strings, ints, InputATopic)
-        val streamB = builder.stream(strings, ints, InputBTopic)
+      def topologyTables(builder: StreamsBuilder) = {
+        val streamA = builder.stream(InputATopic, serdes)
+        val streamB = builder.stream(InputBTopic, serdes)
 
         val tableA = streamA.groupByKey(strings, ints).aggregate(
           new LastInitializer,

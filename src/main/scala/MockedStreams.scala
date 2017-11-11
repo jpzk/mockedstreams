@@ -19,6 +19,7 @@ package com.madewithtea.mockedstreams
 import java.util.{Properties, UUID}
 
 import org.apache.kafka.common.serialization.Serde
+import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.KStreamBuilder
 import org.apache.kafka.streams.state.ReadOnlyWindowStore
@@ -32,14 +33,14 @@ object MockedStreams {
 
   case class Record(topic: String, key: Array[Byte], value: Array[Byte])
 
-  case class Builder(topology: Option[(KStreamBuilder => Unit)] = None,
+  case class Builder(topology: Option[(StreamsBuilder => Unit)] = None,
                      configuration: Properties = new Properties(),
                      stateStores: Seq[String] = Seq(),
                      inputs: List[Record] = List.empty) {
 
     def config(configuration: Properties) = this.copy(configuration = configuration)
 
-    def topology(func: (KStreamBuilder => Unit)) = this.copy(topology = Some(func))
+    def topology(func: (StreamsBuilder => Unit)) = this.copy(topology = Some(func))
 
     def stores(stores: Seq[String]) = this.copy(stateStores = stores)
 
@@ -94,14 +95,14 @@ object MockedStreams {
       props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
       props.putAll(configuration)
 
-      val builder = new KStreamBuilder
+      val builder = new StreamsBuilder();
 
       topology match {
         case Some(t) => t(builder)
         case _ => throw new NoTopologySpecified
       }
 
-      new Driver(new StreamsConfig(props), builder)
+      new Driver(new StreamsConfig(props), builder.build())
     }
 
     private def produce(driver: Driver): Unit = {

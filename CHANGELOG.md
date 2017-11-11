@@ -1,5 +1,13 @@
 # Changelog
 
+## Mocked Streams 1.5.0
+
+* Build against Apache Kafka 1.0
+* Updated ScalaTest version to 3.0.4
+* Updated RocksDB version to 5.7.3
+* KStreamBuilder -> StreamsBuilder
+* Updated stream creation with Consumed.with
+
 ## Mocked Streams 1.4.0
 
 * Build against Apache Kafka 0.11.0.1
