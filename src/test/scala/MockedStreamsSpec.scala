@@ -16,7 +16,6 @@
   */
 package com.madewithtea.mockedstreams
 
-import java.util.Properties
 import org.apache.kafka.streams.Consumed
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.Serdes
@@ -140,6 +139,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
   it should "assert correctly when processing windowed state output topology" in {
     import Fixtures.Multi._
+    import java.util.Properties
 
     val props = new Properties
     props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG,

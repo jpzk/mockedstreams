@@ -21,7 +21,6 @@ import java.util.{Properties, UUID}
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.StreamsConfig
-import org.apache.kafka.streams.kstream.KStreamBuilder
 import org.apache.kafka.streams.state.ReadOnlyWindowStore
 import org.apache.kafka.test.{ProcessorTopologyTestDriver => Driver}
 
@@ -95,7 +94,7 @@ object MockedStreams {
       props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
       props.putAll(configuration)
 
-      val builder = new StreamsBuilder();
+      val builder = new StreamsBuilder()
 
       topology match {
         case Some(t) => t(builder)
@@ -129,5 +128,4 @@ object MockedStreams {
   class NoInputSpecified extends Exception("No input fixtures specified. Call input() method on builder.")
 
   class ExpectedOutputIsEmpty extends Exception("Output size needs to be greater than 0.")
-
 }
