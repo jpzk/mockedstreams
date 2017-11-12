@@ -19,8 +19,7 @@ package com.madewithtea.mockedstreams
 import java.util.{Properties, UUID}
 
 import org.apache.kafka.common.serialization.Serde
-import org.apache.kafka.streams.StreamsBuilder
-import org.apache.kafka.streams.StreamsConfig
+import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig}
 import org.apache.kafka.streams.state.ReadOnlyWindowStore
 import org.apache.kafka.test.{ProcessorTopologyTestDriver => Driver}
 
