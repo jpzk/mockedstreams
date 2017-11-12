@@ -16,12 +16,11 @@
   */
 package com.madewithtea.mockedstreams
 
-import org.apache.kafka.streams.Consumed
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.kstream._
 import org.apache.kafka.streams.processor.TimestampExtractor
-import org.apache.kafka.streams.{StreamsBuilder, KeyValue, StreamsConfig}
+import org.apache.kafka.streams.{Consumed, StreamsBuilder, KeyValue, StreamsConfig}
 import org.scalatest.{FlatSpec, Matchers}
 
 class MockedStreamsSpec extends FlatSpec with Matchers {
