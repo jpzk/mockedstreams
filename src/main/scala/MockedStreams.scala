@@ -88,7 +88,7 @@ object MockedStreams {
 
     // state store is temporarily created in ProcessorTopologyTestDriver
     private def stream = {
-      val props = new Properties
+      val props: java.util.Map[Object, Object] = new Properties
       props.put(StreamsConfig.APPLICATION_ID_CONFIG, s"mocked-${UUID.randomUUID().toString}")
       props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
       props.putAll(configuration)
