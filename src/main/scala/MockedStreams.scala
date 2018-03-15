@@ -49,7 +49,7 @@ object MockedStreams {
       val updatedRecords = newRecords.foldLeft(inputs) {
         case (events, (k, v)) =>
           val newRecord = Record(topic, keySer.serialize(topic, k), valSer.serialize(topic, v))
-          events :+ newRecord 
+          events :+ newRecord
       }
 
       this.copy(inputs = updatedRecords)
@@ -58,7 +58,7 @@ object MockedStreams {
     def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
       if (size <= 0) throw new ExpectedOutputIsEmpty
       withProcessedDriver { driver =>
-        (0 until size).flatMap { i =>
+        (0 until size).flatMap { _ =>
           Option(driver.readOutput(topic, key.deserializer, value.deserializer)) match {
             case Some(record) => Some((record.key, record.value))
             case None => None
@@ -104,7 +104,7 @@ object MockedStreams {
     }
 
     private def produce(driver: Driver): Unit = {
-      inputs.foreach{
+      inputs.foreach {
         case Record(topic, key, value) =>
           driver.process(topic, key, value)
       }
