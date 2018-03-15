@@ -1,5 +1,10 @@
 # Changelog
 
+## Mocked Streams 1.6.0
+
+* Build against Apache Kafka 1.0.1
+* Updated Scala 2.12 version to 2.12.4
+
 ## Mocked Streams 1.5.0
 
 * Build against Apache Kafka 1.0
