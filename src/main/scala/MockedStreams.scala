@@ -19,7 +19,7 @@ package com.madewithtea.mockedstreams
 import java.util.{Properties, UUID}
 
 import org.apache.kafka.common.serialization.Serde
-import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig}
+import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig, Topology}
 import org.apache.kafka.streams.state.ReadOnlyWindowStore
 import org.apache.kafka.test.{ProcessorTopologyTestDriver => Driver}
 
@@ -31,14 +31,23 @@ object MockedStreams {
 
   case class Record(topic: String, key: Array[Byte], value: Array[Byte])
 
-  case class Builder(topology: Option[(StreamsBuilder => Unit)] = None,
+  case class Builder(topology: Option[() => Topology] = None,
                      configuration: Properties = new Properties(),
                      stateStores: Seq[String] = Seq(),
                      inputs: List[Record] = List.empty) {
 
     def config(configuration: Properties) = this.copy(configuration = configuration)
 
-    def topology(func: (StreamsBuilder => Unit)) = this.copy(topology = Some(func))
+    def topology(func: (StreamsBuilder => Unit)) = {
+      val buildTopology = () => {
+        val builder = new StreamsBuilder()
+        func(builder)
+        builder.build()
+      }
+      this.copy(topology = Some(buildTopology))
+    }
+
+    def withTopology(t: () => Topology) = this.copy(topology = Some(t))
 
     def stores(stores: Seq[String]) = this.copy(stateStores = stores)
 
@@ -93,14 +102,9 @@ object MockedStreams {
       props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
       props.putAll(configuration)
 
-      val builder = new StreamsBuilder()
+      val t = topology.getOrElse(throw new NoTopologySpecified)
 
-      topology match {
-        case Some(t) => t(builder)
-        case _ => throw new NoTopologySpecified
-      }
-
-      new Driver(new StreamsConfig(props), builder.build())
+      new Driver(new StreamsConfig(props), t())
     }
 
     private def produce(driver: Driver): Unit = {

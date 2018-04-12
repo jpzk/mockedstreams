@@ -20,7 +20,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.kstream._
 import org.apache.kafka.streams.processor.TimestampExtractor
-import org.apache.kafka.streams.{Consumed, StreamsBuilder, KeyValue, StreamsConfig}
+import org.apache.kafka.streams._
 import org.scalatest.{FlatSpec, Matchers}
 
 class MockedStreamsSpec extends FlatSpec with Matchers {
@@ -154,6 +154,23 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
     builder.windowStateTable(StoreName, "y")
       .shouldEqual(expectedCy.toMap)
+  }
+
+  it should "accept already built topology" in {
+    import Fixtures.Uppercase._
+
+    def getTopology() = {
+      val builder = new StreamsBuilder()
+      topology(builder)
+      builder.build()
+    }
+
+    val output = MockedStreams()
+      .withTopology(getTopology)
+      .input(InputTopic, strings, strings, input)
+      .output(OutputTopic, strings, strings, expected.size)
+
+    output shouldEqual expected
   }
 
   class LastInitializer extends Initializer[Integer] {
