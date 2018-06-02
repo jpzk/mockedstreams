@@ -6,7 +6,7 @@
 
 Mocked Streams 1.7.0 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.11 and 2.12 which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
 
-    libraryDependencies += "com.madewithtea" %% "mockedstreams" % "1.6.0" % "test"
+    libraryDependencies += "com.madewithtea" %% "mockedstreams" % "1.7.0" % "test"
 
 ## Apache Kafka Compatibility
 
