@@ -3,3 +3,4 @@
 * Hamidreza Afzali 
 * Jendrik Poloczek 
 * Svend Vanderveken
+* Daniel Wojda
