@@ -1,5 +1,12 @@
 # Changelog
 
+## Mocked Streams 1.7.0
+
+* Bumping versions of dependencies
+* Build against Apache Kafka 1.1.0
+* Daniel Wojda added new way of supplying topologies (withTopology)
+* Added Daniel Wojda to CONTRIBUTORS.md
+
 ## Mocked Streams 1.6.0
 
 * Build against Apache Kafka 1.0.1
