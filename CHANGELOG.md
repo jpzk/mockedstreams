@@ -1,5 +1,10 @@
 # Changelog
 
+## Mocked Streams 1.8.0
+
+* Bumping versions of dependencies
+* Build against Apache Kafka 1.1.1
+
 ## Mocked Streams 1.7.0
 
 * Bumping versions of dependencies
