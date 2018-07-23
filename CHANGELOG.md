@@ -1,5 +1,11 @@
 # Changelog
 
+## Mocked Streams 1.7.0
+
+* Build against Apache Kafka 1.1.1
+* Updated RocksDB to 5.14.2
+* Updated ScalaTest to 3.0.5
+
 ## Mocked Streams 1.6.0
 
 * Build against Apache Kafka 1.0.1
