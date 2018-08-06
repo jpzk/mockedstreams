@@ -10,15 +10,17 @@ lazy val commonSettings = Seq(
 
 val scalaTestVersion = "3.0.5"
 val rocksDBVersion = "5.14.2"
-val kafkaVersion = "1.1.1"
+val kafkaVersion = "2.0.0"
 
 lazy val kafka = Seq(
-   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
-   "org.apache.kafka" % "kafka-clients" % kafkaVersion classifier "test",
-   "org.apache.kafka" % "kafka-streams" % kafkaVersion,
-   "org.apache.kafka" % "kafka-streams" % kafkaVersion classifier "test",
-   "org.apache.kafka" %% "kafka" % kafkaVersion 
- )
+  "javax.ws.rs" % "javax.ws.rs-api" % "2.1" jar(),
+  "org.apache.kafka" % "kafka-clients" % kafkaVersion,
+  "org.apache.kafka" % "kafka-clients" % kafkaVersion classifier "test",
+  "org.apache.kafka" % "kafka-streams" % kafkaVersion,
+  "org.apache.kafka" %% "kafka-streams-scala" % kafkaVersion,
+  "org.apache.kafka" % "kafka-streams-test-utils" % kafkaVersion,
+  "org.apache.kafka" %% "kafka" % kafkaVersion
+)
 
 lazy val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 lazy val rocksDB = "org.rocksdb" % "rocksdbjni" % rocksDBVersion % "test"
