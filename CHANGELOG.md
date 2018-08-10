@@ -1,5 +1,14 @@
 # Changelog
 
+## Mocked Streams 2.0
+
+* Build against Apache Kafka 2.0
+* Changes to support Kafka 2.0
+* Replaced ProcessorTopologyTestDriver with TopologyTestDriver
+* Removed Record class to use ConsumerRecord directly
+* Added Michal Dziemianko to CONTRIBUTORS.md
+* Thanks to Michal for Kafka 2.0 support
+
 ## Mocked Streams 1.8.0
 
 * Bumping versions of dependencies
