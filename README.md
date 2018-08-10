@@ -4,14 +4,15 @@
 [![codecov](https://codecov.io/gh/jpzk/mockedstreams/branch/master/graph/badge.svg)](https://codecov.io/gh/jpzk/mockedstreams) [![License](http://img.shields.io/:license-Apache%202-grey.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) [![GitHub stars](https://img.shields.io/github/stars/jpzk/mockedstreams.svg?style=flat)](https://github.com/jpzk/mockedstreams/stargazers) 
 
 
-Mocked Streams 1.8.0 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.11 and 2.12 which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
+Mocked Streams 2.0.0 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.11 and 2.12 which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
 
-    libraryDependencies += "com.madewithtea" %% "mockedstreams" % "1.8.0" % "test"
+    libraryDependencies += "com.madewithtea" %% "mockedstreams" % "2.0.0" % "test"
 
 ## Apache Kafka Compatibility
 
 | Mocked Streams Version        | Apache Kafka Version           |
 |------------- |-------------|
+| 2.0.0      | 2.0.0.0 |
 | 1.8.0      | 1.1.1.0 |
 | 1.7.0      | 1.1.0.0 |
 | 1.6.0      | 1.0.1.0 |
@@ -26,7 +27,7 @@ Mocked Streams 1.8.0 [(git)](https://github.com/jpzk/mockedstreams) is a library
 
 ## Simple Example
 
-It wraps the [org.apache.kafka.test.ProcessorTopologyTestDriver](https://github.com/apache/kafka/blob/trunk/streams/src/test/java/org/apache/kafka/test/ProcessorTopologyTestDriver.java) class, but adds more syntactic sugar to keep your test code simple:
+It wraps the [org.apache.kafka.streams.TopologyTestDriver](https://github.com/apache/kafka/blob/trunk/streams/test-utils/src/main/java/org/apache/kafka/streams/TopologyTestDriver.java) class, but adds more syntactic sugar to keep your test code simple:
 
     import com.madewithtea.mockedstreams.MockedStreams
 
@@ -95,7 +96,7 @@ When you define your state stores via .stores(stores: Seq[String]) since 1.2 and
     import com.madewithtea.mockedstreams.MockedStreams
 
     val props = new Properties
-    props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
+    props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
       classOf[TimestampExtractors.CustomTimestampExtractor].getName)
 
     val mstreams = MockedStreams()
@@ -114,7 +115,7 @@ Sometimes you need to pass a custom configuration to Kafka Streams:
     import com.madewithtea.mockedstreams.MockedStreams
 
       val props = new Properties
-      props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG, classOf[CustomExtractor].getName)
+      props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, classOf[CustomExtractor].getName)
 
       val mstreams = MockedStreams()
       .topology { builder => builder.stream(...) [...] }

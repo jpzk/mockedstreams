@@ -14,6 +14,7 @@
   * See the License for the specific language governing permissions and
   * limitations under the License.
   */
+
 package com.madewithtea.mockedstreams
 
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -140,7 +141,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     import java.util.Properties
 
     val props = new Properties
-    props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
+    props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
       classOf[TimestampExtractors.CustomTimestampExtractor].getName)
 
     val builder = MockedStreams()
@@ -197,14 +198,14 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
       val strings = Serdes.String()
       val serdes = Consumed.`with`(strings, strings)
-        
+
       val InputTopic = "input"
       val OutputTopic = "output"
 
       def topology(builder: StreamsBuilder) = {
         builder.stream(InputTopic, serdes)
           .map[String, String]((k, v) => new KeyValue(k, v.toUpperCase))
-          .to(strings, strings, OutputTopic)
+          .to(OutputTopic, Produced.`with`(strings, strings))
       }
     }
 
@@ -236,59 +237,63 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
         val streamA = builder.stream(InputATopic, serdes)
         val streamB = builder.stream(InputBTopic, serdes)
 
-        val table = streamA.groupByKey(strings, ints).aggregate(
-          new LastInitializer,
-          new LastAggregator, ints, StoreName)
+        val table = streamA.groupByKey(Serialized.`with`(strings, ints))
+          .aggregate(
+            new LastInitializer,
+            new LastAggregator,
+            Materialized.as(StoreName).withKeySerde(strings).withValueSerde(ints)
+          )
 
-        streamB.leftJoin[Integer, Integer](table, new AddJoiner(), strings, ints)
-          .to(strings, ints, OutputATopic)
+        streamB.leftJoin[Integer, Integer](table, new AddJoiner(), Joined.`with`(strings, ints, ints))
+          .to(OutputATopic, Produced.`with`(strings, ints))
       }
 
       def topology1WindowOutput(builder: StreamsBuilder) = {
         val streamA = builder.stream(InputCTopic, serdes)
-        streamA.groupByKey(strings, ints).count(
-          TimeWindows.of(1),
-          StoreName)
+        streamA.groupByKey(Serialized.`with`(strings, ints))
+          .windowedBy(TimeWindows.of(1))
+          .count(Materialized.as(StoreName))
       }
 
       def topology2Output(builder: StreamsBuilder) = {
         val streamA = builder.stream(InputATopic, serdes)
         val streamB = builder.stream(InputBTopic, serdes)
 
-        val table = streamA.groupByKey(strings, ints).aggregate(
+        val table = streamA.groupByKey(Serialized.`with`(strings, ints)).aggregate(
           new LastInitializer,
           new LastAggregator,
-          ints,
-          StoreName)
+          Materialized.as(StoreName).withKeySerde(strings).withValueSerde(ints))
 
-        streamB.leftJoin[Integer, Integer](table, new AddJoiner(), strings, ints)
-          .to(strings, ints, OutputATopic)
+        streamB.leftJoin[Integer, Integer](table, new AddJoiner(), Joined.`with`(strings, ints, ints))
+          .to(OutputATopic, Produced.`with`(strings, ints))
 
-        streamB.leftJoin[Integer, Integer](table, new SubJoiner(), strings, ints)
-          .to(strings, ints, OutputBTopic)
+        streamB.leftJoin[Integer, Integer](table, new SubJoiner(), Joined.`with`(strings, ints, ints))
+          .to(OutputBTopic, Produced.`with`(strings, ints))
       }
 
       def topologyTables(builder: StreamsBuilder) = {
         val streamA = builder.stream(InputATopic, serdes)
         val streamB = builder.stream(InputBTopic, serdes)
 
-        val tableA = streamA.groupByKey(strings, ints).aggregate(
-          new LastInitializer,
-          new LastAggregator,
-          ints,
-          StoreName)
+        val tableA = streamA.groupByKey(Serialized.`with`(strings, ints))
+          .aggregate(
+            new LastInitializer,
+            new LastAggregator,
+            Materialized.as(StoreName).withKeySerde(strings).withValueSerde(ints)
+          )
 
-        val tableB = streamB.groupByKey(strings, ints).aggregate(
-          new LastInitializer,
-          new LastAggregator,
-          ints,
-          Store2Name)
+        val tableB = streamB.groupByKey(Serialized.`with`(strings, ints))
+          .aggregate(
+            new LastInitializer,
+            new LastAggregator,
+            Materialized.as(Store2Name).withKeySerde(strings).withValueSerde(ints)
+          )
 
         val resultTable = tableA.join[Integer,Integer](tableB, new AddJoiner)
 
         resultTable
           .toStream
-          .to(strings, ints, OutputATopic)
+          .to(OutputATopic, Produced.`with`(strings, ints))
       }
     }
 
