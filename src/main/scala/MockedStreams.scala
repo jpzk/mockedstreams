@@ -103,10 +103,7 @@ object MockedStreams {
       props.put(StreamsConfig.APPLICATION_ID_CONFIG, s"mocked-${UUID.randomUUID().toString}")
       props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
       props.putAll(configuration)
-
-      val t: () => Topology = topology.getOrElse(throw new NoTopologySpecified)
-
-      new Driver(t(), props)
+      new Driver(topology.getOrElse(throw new NoTopologySpecified)(), props)
     }
 
     private def produce(driver: Driver): Unit =
