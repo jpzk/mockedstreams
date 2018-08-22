@@ -8,6 +8,8 @@ Mocked Streams 2.0.0 [(git)](https://github.com/jpzk/mockedstreams) is a library
 
     libraryDependencies += "com.madewithtea" %% "mockedstreams" % "2.0.0" % "test"
 
+Java 8 port of Mocked Streams is [Mockafka](https://github.com/carlosmenezes/mockafka)
+
 ## Apache Kafka Compatibility
 
 | Mocked Streams Version        | Apache Kafka Version           |
