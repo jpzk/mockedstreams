@@ -174,6 +174,20 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     output shouldEqual expected
   }
 
+
+  it should "accept consumer records with custom timestamps" in {
+
+    import Fixtures.Multi._
+
+    val builder = MockedStreams()
+      .topology(topology1WindowOutput)
+      .inputWithTimeStamps(InputCTopic, strings, ints, inputCWithTimeStamps)
+      .stores(Seq(StoreName))
+
+    builder.windowStateTable(StoreName, "x")
+      .shouldEqual(expectedCWithTimeStamps.toMap)
+  }
+
   class LastInitializer extends Initializer[Integer] {
     override def apply() = 0
   }
@@ -216,10 +230,26 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val inputA = Seq(("x", int(1)), ("y", int(2)))
       val inputB = Seq(("x", int(4)), ("y", int(3)))
       val inputC = Seq(("x", int(1)), ("x", int(1)), ("x", int(2)), ("y", int(1)))
+
+      val inputCWithTimeStamps = Seq(
+        ("x", int(1), 1000L),
+        ("x", int(1), 1000L),
+        ("x", int(1), 1001L),
+        ("x", int(1), 1001L),
+        ("x", int(1), 1002L)
+      )
+
       val expectedA = Seq(("x", int(5)), ("y", int(5)))
       val expectedB = Seq(("x", int(3)), ("y", int(1)))
+
       val expectedCx = Seq((1, 2), (2, 1))
       val expectedCy = Seq((1, 1))
+
+      val expectedCWithTimeStamps = Seq(
+        1000 -> 2,
+        1001 -> 2,
+        1002 -> 1
+      )
 
       val strings = Serdes.String()
       val ints = Serdes.Integer()

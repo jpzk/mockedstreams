@@ -57,7 +57,7 @@ object MockedStreams {
 
       val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
 
-      val updatedRecords = newRecords.foldLeft(inputs) {
+      val updatedRecords: List[ConsumerRecord[Array[Byte], Array[Byte]]] = newRecords.foldLeft(inputs) {
         case (events, (k, v)) =>
           val newRecord = factory.create(topic, k, v)
           events :+ newRecord
@@ -65,6 +65,20 @@ object MockedStreams {
 
       this.copy(inputs = updatedRecords)
     }
+
+    def inputWithTimeStamps[K, V](topic: String, key: Serde[K], value: Serde[V], newRecords: Seq[(K, V, Long)]): Builder = {
+      val keySer = key.serializer
+      val valSer = value.serializer
+      val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
+
+      val updatedRecords: List[ConsumerRecord[Array[Byte], Array[Byte]]] = newRecords.foldLeft(inputs) {
+        case (events, (k, v, timestampMs)) =>
+          val newRecord = factory.create(topic, k, v, timestampMs)
+          events :+ newRecord
+      }
+      this.copy(inputs = updatedRecords)
+    }
+
 
     def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
       if (size <= 0) throw new ExpectedOutputIsEmpty
@@ -88,8 +102,11 @@ object MockedStreams {
       list.toMap
     }
 
-    def windowStateTable[K, V](name: String, key: K, timeFrom: Long = 0,
+    def windowStateTable[K, V](name: String,
+                               key: K,
+                               timeFrom: Long = 0,
                                timeTo: Long = Long.MaxValue) = withProcessedDriver { driver =>
+
       val store = driver.getStateStore(name).asInstanceOf[ReadOnlyWindowStore[K, V]]
       val records = store.fetch(key, timeFrom, timeTo)
       val list = records.asScala.toList.map { record => (record.key, record.value) }
