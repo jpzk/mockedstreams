@@ -57,7 +57,6 @@ object MockedStreams {
     def inputWithTime[K, V](topic: String, key: Serde[K], value: Serde[V], records: Seq[(K, V, Long)]) =
       _input(topic, key, value, Right(records))
 
-
     def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
       if (size <= 0) throw new ExpectedOutputIsEmpty
       withProcessedDriver { driver =>
@@ -121,8 +120,7 @@ object MockedStreams {
       inputs.foreach(driver.pipeInput)
 
     private def withProcessedDriver[T](f: Driver => T): T = {
-      if (inputs.isEmpty)
-        throw new NoInputSpecified
+      if (inputs.isEmpty) throw new NoInputSpecified
 
       val driver = stream
       produce(driver)
