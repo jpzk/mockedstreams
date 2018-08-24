@@ -17,7 +17,6 @@
 
 package com.madewithtea.mockedstreams
 
-import java.lang
 import java.util.{Properties, UUID}
 
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -84,8 +83,7 @@ object MockedStreams {
     def windowStateTable[K, V](name: String,
                                key: K,
                                timeFrom: Long = 0,
-                               timeTo: Long = Long.MaxValue): Map[lang.Long, V] = withProcessedDriver { driver =>
-
+                               timeTo: Long = Long.MaxValue) = withProcessedDriver { driver =>
       val store = driver.getStateStore(name).asInstanceOf[ReadOnlyWindowStore[K, V]]
       val records = store.fetch(key, timeFrom, timeTo)
       val list = records.asScala.toList.map { record => (record.key, record.value) }
