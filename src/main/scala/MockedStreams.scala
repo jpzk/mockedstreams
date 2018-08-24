@@ -92,7 +92,7 @@ object MockedStreams {
     }
 
     private def _input[K, V](topic: String, key: Serde[K], value: Serde[V],
-                               records: Either[Seq[(K, V)], Seq[(K, V, Long)]]) = {
+                             records: Either[Seq[(K, V)], Seq[(K, V, Long)]]) = {
       val keySer = key.serializer
       val valSer = value.serializer
       val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
@@ -137,4 +137,5 @@ object MockedStreams {
   class NoInputSpecified extends Exception("No input fixtures specified. Call input() method on builder.")
 
   class ExpectedOutputIsEmpty extends Exception("Output size needs to be greater than 0.")
+
 }
