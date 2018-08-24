@@ -181,7 +181,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
     val builder = MockedStreams()
       .topology(topology1WindowOutput)
-      .inputWithTimeStamps(InputCTopic, strings, ints, inputCWithTimeStamps)
+      .inputWithTime(InputCTopic, strings, ints, inputCWithTimeStamps)
       .stores(Seq(StoreName))
 
     builder.windowStateTable(StoreName, "x")

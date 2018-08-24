@@ -17,6 +17,7 @@
 
 package com.madewithtea.mockedstreams
 
+import java.lang
 import java.util.{Properties, UUID}
 
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -51,34 +52,40 @@ object MockedStreams {
 
     def stores(stores: Seq[String]) = this.copy(stateStores = stores)
 
+    private def inputPriv[K, V](topic: String, key: Serde[K], value: Serde[V],
+                                records: Either[Seq[(K, V)], Seq[(K, V, Long)]]) = {
+      val keySer = key.serializer
+      val valSer = value.serializer
+      val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
+
+      def foldWithoutTime(events: List[ConsumerRecord[Array[Byte], Array[Byte]]], kv: (K, V)) = {
+        val newRecord = factory.create(topic, kv._1, kv._2)
+        events :+ newRecord
+      }
+
+      def foldTime(events: List[ConsumerRecord[Array[Byte], Array[Byte]]], kvt: (K, V, Long)) = kvt match {
+        case (k, v, t) =>
+          val newRecord = factory.create(topic, k, v, t)
+          events :+ newRecord
+      }
+
+      val updatedRecords = records match {
+        case Left(withoutTime) => withoutTime.foldLeft(inputs)(foldWithoutTime)
+        case Right(withTime) => withTime.foldLeft(inputs)(foldTime)
+      }
+      this.copy(inputs = updatedRecords)
+    }
+
     def input[K, V](topic: String, key: Serde[K], value: Serde[V], newRecords: Seq[(K, V)]) = {
-      val keySer = key.serializer
-      val valSer = value.serializer
-
-      val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
-
-      val updatedRecords: List[ConsumerRecord[Array[Byte], Array[Byte]]] = newRecords.foldLeft(inputs) {
-        case (events, (k, v)) =>
-          val newRecord = factory.create(topic, k, v)
-          events :+ newRecord
-      }
-
-      this.copy(inputs = updatedRecords)
+      inputPriv(topic, key, value, Left(newRecords))
     }
 
-    def inputWithTimeStamps[K, V](topic: String, key: Serde[K], value: Serde[V], newRecords: Seq[(K, V, Long)]): Builder = {
-      val keySer = key.serializer
-      val valSer = value.serializer
-      val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
-
-      val updatedRecords: List[ConsumerRecord[Array[Byte], Array[Byte]]] = newRecords.foldLeft(inputs) {
-        case (events, (k, v, timestampMs)) =>
-          val newRecord = factory.create(topic, k, v, timestampMs)
-          events :+ newRecord
-      }
-      this.copy(inputs = updatedRecords)
+    def inputWithTime[K, V](topic: String,
+                            key: Serde[K],
+                            value: Serde[V],
+                            newRecords: Seq[(K, V, Long)]): Builder = {
+      inputPriv(topic, key, value, Right(newRecords))
     }
-
 
     def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
       if (size <= 0) throw new ExpectedOutputIsEmpty
@@ -92,7 +99,7 @@ object MockedStreams {
       }
     }
 
-    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int): Map[K, V] =
+    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) =
       output[K, V](topic, key, value, size).toMap
 
     def stateTable(name: String): Map[Nothing, Nothing] = withProcessedDriver { driver =>
@@ -105,7 +112,7 @@ object MockedStreams {
     def windowStateTable[K, V](name: String,
                                key: K,
                                timeFrom: Long = 0,
-                               timeTo: Long = Long.MaxValue) = withProcessedDriver { driver =>
+                               timeTo: Long = Long.MaxValue): Map[lang.Long, V] = withProcessedDriver { driver =>
 
       val store = driver.getStateStore(name).asInstanceOf[ReadOnlyWindowStore[K, V]]
       val records = store.fetch(key, timeFrom, timeTo)
@@ -127,7 +134,7 @@ object MockedStreams {
       inputs.foreach(driver.pipeInput)
 
     private def withProcessedDriver[T](f: Driver => T): T = {
-      if(inputs.isEmpty)
+      if (inputs.isEmpty)
         throw new NoInputSpecified
 
       val driver = stream
@@ -143,4 +150,5 @@ object MockedStreams {
   class NoInputSpecified extends Exception("No input fixtures specified. Call input() method on builder.")
 
   class ExpectedOutputIsEmpty extends Exception("Output size needs to be greater than 0.")
+
 }
