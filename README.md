@@ -129,3 +129,8 @@ Sometimes you need to pass a custom configuration to Kafka Streams:
     mstreams.output("out-a", strings, ints, expA.size) shouldEqual(expectedA)
     mstreams.output("out-b", strings, ints, expB.size) shouldEqual(expectedB)
  
+## Companies using Mocked Streams 
+
+* [Sky.uk](https://www.sky.com/)
+* [Hive Streaming AB](https://www.hivestreaming.com/)
+* [moip, a wirecard company](https://moip.com.br/en/)
