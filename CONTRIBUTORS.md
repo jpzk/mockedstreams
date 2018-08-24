@@ -5,3 +5,4 @@
 * Svend Vanderveken
 * Daniel Wojda
 * Michal Dziemianko
+* Dan Hamilton

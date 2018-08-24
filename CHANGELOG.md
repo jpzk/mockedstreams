@@ -1,5 +1,11 @@
 # Changelog
 
+## Mocked Streams 2.1
+
+* Added .inputWithTime to allow custom timestamps 
+* Thanks to Dan Hamilton for .inputWithTime implementation
+* Added Dan Hamilton to CONTRIBUTORS.md
+
 ## Mocked Streams 2.0
 
 * Build against Apache Kafka 2.0
