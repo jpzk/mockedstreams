@@ -14,14 +14,16 @@
   * See the License for the specific language governing permissions and
   * limitations under the License.
   */
+
 package com.madewithtea.mockedstreams
 
 import java.util.{Properties, UUID}
 
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.Serde
-import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig, Topology}
 import org.apache.kafka.streams.state.ReadOnlyWindowStore
-import org.apache.kafka.test.{ProcessorTopologyTestDriver => Driver}
+import org.apache.kafka.streams.test.ConsumerRecordFactory
+import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig, Topology, TopologyTestDriver => Driver}
 
 import scala.collection.JavaConverters._
 
@@ -29,16 +31,14 @@ object MockedStreams {
 
   def apply() = Builder()
 
-  case class Record(topic: String, key: Array[Byte], value: Array[Byte])
-
   case class Builder(topology: Option[() => Topology] = None,
                      configuration: Properties = new Properties(),
                      stateStores: Seq[String] = Seq(),
-                     inputs: List[Record] = List.empty) {
+                     inputs: List[ConsumerRecord[Array[Byte], Array[Byte]]] = List.empty) {
 
     def config(configuration: Properties) = this.copy(configuration = configuration)
 
-    def topology(func: (StreamsBuilder => Unit)) = {
+    def topology(func: StreamsBuilder => Unit) = {
       val buildTopology = () => {
         val builder = new StreamsBuilder()
         func(builder)
@@ -55,14 +55,30 @@ object MockedStreams {
       val keySer = key.serializer
       val valSer = value.serializer
 
-      val updatedRecords = newRecords.foldLeft(inputs) {
+      val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
+
+      val updatedRecords: List[ConsumerRecord[Array[Byte], Array[Byte]]] = newRecords.foldLeft(inputs) {
         case (events, (k, v)) =>
-          val newRecord = Record(topic, keySer.serialize(topic, k), valSer.serialize(topic, v))
+          val newRecord = factory.create(topic, k, v)
           events :+ newRecord
       }
 
       this.copy(inputs = updatedRecords)
     }
+
+    def inputWithTimeStamps[K, V](topic: String, key: Serde[K], value: Serde[V], newRecords: Seq[(K, V, Long)]): Builder = {
+      val keySer = key.serializer
+      val valSer = value.serializer
+      val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
+
+      val updatedRecords: List[ConsumerRecord[Array[Byte], Array[Byte]]] = newRecords.foldLeft(inputs) {
+        case (events, (k, v, timestampMs)) =>
+          val newRecord = factory.create(topic, k, v, timestampMs)
+          events :+ newRecord
+      }
+      this.copy(inputs = updatedRecords)
+    }
+
 
     def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
       if (size <= 0) throw new ExpectedOutputIsEmpty
@@ -86,8 +102,11 @@ object MockedStreams {
       list.toMap
     }
 
-    def windowStateTable[K, V](name: String, key: K, timeFrom: Long = 0,
+    def windowStateTable[K, V](name: String,
+                               key: K,
+                               timeFrom: Long = 0,
                                timeTo: Long = Long.MaxValue) = withProcessedDriver { driver =>
+
       val store = driver.getStateStore(name).asInstanceOf[ReadOnlyWindowStore[K, V]]
       val records = store.fetch(key, timeFrom, timeTo)
       val list = records.asScala.toList.map { record => (record.key, record.value) }
@@ -97,22 +116,15 @@ object MockedStreams {
 
     // state store is temporarily created in ProcessorTopologyTestDriver
     private def stream = {
-      val props: java.util.Map[Object, Object] = new Properties
+      val props = new Properties
       props.put(StreamsConfig.APPLICATION_ID_CONFIG, s"mocked-${UUID.randomUUID().toString}")
       props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
       props.putAll(configuration)
-
-      val t = topology.getOrElse(throw new NoTopologySpecified)
-
-      new Driver(new StreamsConfig(props), t())
+      new Driver(topology.getOrElse(throw new NoTopologySpecified)(), props)
     }
 
-    private def produce(driver: Driver): Unit = {
-      inputs.foreach {
-        case Record(topic, key, value) =>
-          driver.process(topic, key, value)
-      }
-    }
+    private def produce(driver: Driver): Unit =
+      inputs.foreach(driver.pipeInput)
 
     private def withProcessedDriver[T](f: Driver => T): T = {
       if(inputs.isEmpty)
