@@ -51,20 +51,11 @@ object MockedStreams {
 
     def stores(stores: Seq[String]) = this.copy(stateStores = stores)
 
-    def input[K, V](topic: String, key: Serde[K], value: Serde[V], newRecords: Seq[(K, V)]) = {
-      val keySer = key.serializer
-      val valSer = value.serializer
+    def input[K, V](topic: String, key: Serde[K], value: Serde[V], records: Seq[(K, V)]) =
+      _input(topic, key, value, Left(records))
 
-      val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
-
-      val updatedRecords = newRecords.foldLeft(inputs) {
-        case (events, (k, v)) =>
-          val newRecord = factory.create(topic, k, v)
-          events :+ newRecord
-      }
-
-      this.copy(inputs = updatedRecords)
-    }
+    def inputWithTime[K, V](topic: String, key: Serde[K], value: Serde[V], records: Seq[(K, V, Long)]) =
+      _input(topic, key, value, Right(records))
 
     def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
       if (size <= 0) throw new ExpectedOutputIsEmpty
@@ -78,23 +69,42 @@ object MockedStreams {
       }
     }
 
-    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int): Map[K, V] =
+    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) =
       output[K, V](topic, key, value, size).toMap
 
-    def stateTable(name: String): Map[Nothing, Nothing] = withProcessedDriver { driver =>
+    def stateTable(name: String) = withProcessedDriver { driver =>
       val records = driver.getKeyValueStore(name).all()
       val list = records.asScala.toList.map { record => (record.key, record.value) }
       records.close()
       list.toMap
     }
 
-    def windowStateTable[K, V](name: String, key: K, timeFrom: Long = 0,
+    def windowStateTable[K, V](name: String,
+                               key: K,
+                               timeFrom: Long = 0,
                                timeTo: Long = Long.MaxValue) = withProcessedDriver { driver =>
       val store = driver.getStateStore(name).asInstanceOf[ReadOnlyWindowStore[K, V]]
       val records = store.fetch(key, timeFrom, timeTo)
       val list = records.asScala.toList.map { record => (record.key, record.value) }
       records.close()
       list.toMap
+    }
+
+    private def _input[K, V](topic: String, key: Serde[K], value: Serde[V],
+                             records: Either[Seq[(K, V)], Seq[(K, V, Long)]]) = {
+      val keySer = key.serializer
+      val valSer = value.serializer
+      val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
+
+      val updatedRecords = records match {
+        case Left(withoutTime) => withoutTime.foldLeft(inputs) {
+          case (events, (k, v)) => events :+ factory.create(topic, k, v)
+        }
+        case Right(withTime) => withTime.foldLeft(inputs) {
+          case (events, (k, v, timestamp)) => events :+ factory.create(topic, k, v, timestamp)
+        }
+      }
+      this.copy(inputs = updatedRecords)
     }
 
     // state store is temporarily created in ProcessorTopologyTestDriver
@@ -110,8 +120,7 @@ object MockedStreams {
       inputs.foreach(driver.pipeInput)
 
     private def withProcessedDriver[T](f: Driver => T): T = {
-      if(inputs.isEmpty)
-        throw new NoInputSpecified
+      if (inputs.isEmpty) throw new NoInputSpecified
 
       val driver = stream
       produce(driver)
@@ -126,4 +135,5 @@ object MockedStreams {
   class NoInputSpecified extends Exception("No input fixtures specified. Call input() method on builder.")
 
   class ExpectedOutputIsEmpty extends Exception("Output size needs to be greater than 0.")
+
 }
