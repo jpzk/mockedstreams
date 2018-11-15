@@ -1,7 +1,7 @@
 
 lazy val commonSettings = Seq(
   organization := "com.madewithtea",
-  version := "2.1.0",
+  version := "2.1.1",
   scalaVersion := "2.12.6",
   crossScalaVersions := Seq("2.12.6","2.11.12"),
   description := "Topology Unit-Testing Library for Apache Kafka / Kafka Streams",
@@ -10,7 +10,7 @@ lazy val commonSettings = Seq(
 
 val scalaTestVersion = "3.0.5"
 val rocksDBVersion = "5.14.2"
-val kafkaVersion = "2.0.0"
+val kafkaVersion = "2.0.1"
 
 lazy val kafka = Seq(
   "javax.ws.rs" % "javax.ws.rs-api" % "2.1" jar(),
