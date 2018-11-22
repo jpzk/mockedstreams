@@ -1,5 +1,9 @@
 # Changelog
 
+## Mocked Streams 2.2.0
+
+* Bumping version of kafka streams (2.0.0 -> 2.1.0)
+
 ## Mocked Streams 2.1
 
 * Added .inputWithTime to allow custom timestamps 
