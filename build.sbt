@@ -1,19 +1,19 @@
 
 lazy val commonSettings = Seq(
   organization := "com.madewithtea",
-  version := "2.1.0",
+  version := "2.2.0",
   scalaVersion := "2.12.6",
-  crossScalaVersions := Seq("2.12.6","2.11.12"),
+  crossScalaVersions := Seq("2.12.7", "2.11.12"),
   description := "Topology Unit-Testing Library for Apache Kafka / Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
   scalacOptions := Seq("-Xexperimental"))
 
 val scalaTestVersion = "3.0.5"
-val rocksDBVersion = "5.14.2"
-val kafkaVersion = "2.0.0"
+val rocksDBVersion = "5.17.2"
+val kafkaVersion = "2.1.0"
 
 lazy val kafka = Seq(
-  "javax.ws.rs" % "javax.ws.rs-api" % "2.1" jar(),
+  "javax.ws.rs" % "javax.ws.rs-api" % "2.1.1" jar(),
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
   "org.apache.kafka" % "kafka-clients" % kafkaVersion classifier "test",
   "org.apache.kafka" % "kafka-streams" % kafkaVersion,
@@ -48,7 +48,7 @@ publishArtifact in Test := false
 
 pomIncludeRepository := { _ => false }
 
-pomExtra := (
+pomExtra :=
   <url>https://www.madewithtea.com/pages/mocked-streams.html</url>
     <licenses>
       <license>
@@ -68,6 +68,5 @@ pomExtra := (
         <url>https://www.madewithtea.com</url>
       </developer>
     </developers>
-  )
 
 
