@@ -24,7 +24,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.state.ReadOnlyWindowStore
 import org.apache.kafka.streams.test.ConsumerRecordFactory
-import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig, Topology, TopologyTestDriver => Driver}
+import org.apache.kafka.streams.{StreamsConfig, Topology, TopologyTestDriver => Driver}
+import org.apache.kafka.streams.scala.StreamsBuilder
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
