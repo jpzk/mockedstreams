@@ -1,5 +1,11 @@
 # Changelog
 
+## Mocked Streams 2.2
+
+* Added compatibility with Apache Kafka 2.1 
+* Added Mateusz Owczarek to contributors
+* Thanks Mateusz for the PR to make it Apache Kafka 2.1 compatible
+
 ## Mocked Streams 2.1
 
 * Added .inputWithTime to allow custom timestamps 
