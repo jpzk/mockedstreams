@@ -17,11 +17,14 @@
 
 package com.madewithtea.mockedstreams
 
+import java.lang
+import java.time.{Duration, Instant}
+
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.common.serialization.Serdes
+import org.apache.kafka.common.serialization.{Serde, Serdes}
+import org.apache.kafka.streams._
 import org.apache.kafka.streams.kstream._
 import org.apache.kafka.streams.processor.TimestampExtractor
-import org.apache.kafka.streams._
 import org.scalatest.{FlatSpec, Matchers}
 
 class MockedStreamsSpec extends FlatSpec with Matchers {
@@ -62,6 +65,9 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
     an[NoInputSpecified] should be thrownBy
       t.windowStateTable("window-state-table", 0)
+
+    an[NoInputSpecified] should be thrownBy
+      t.windowStateTable("window-state-table", 0, Instant.ofEpochMilli(Long.MinValue), Instant.ofEpochMilli(Long.MaxValue))
   }
 
   it should "assert correctly when processing strings to uppercase" in {
@@ -137,8 +143,9 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
   }
 
   it should "assert correctly when processing windowed state output topology" in {
-    import Fixtures.Multi._
     import java.util.Properties
+
+    import Fixtures.Multi._
 
     val props = new Properties
     props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
@@ -155,19 +162,25 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
     builder.windowStateTable(StoreName, "y")
       .shouldEqual(expectedCy.toMap)
+
+    builder.windowStateTable(StoreName, "x", Instant.ofEpochMilli(Long.MinValue), Instant.ofEpochMilli(Long.MaxValue))
+      .shouldEqual(expectedCx.toMap)
+
+    builder.windowStateTable(StoreName, "y", Instant.ofEpochMilli(Long.MinValue), Instant.ofEpochMilli(Long.MaxValue))
+      .shouldEqual(expectedCy.toMap)
   }
 
   it should "accept already built topology" in {
     import Fixtures.Uppercase._
 
-    def getTopology() = {
+    def getTopology = {
       val builder = new StreamsBuilder()
       topology(builder)
       builder.build()
     }
 
     val output = MockedStreams()
-      .withTopology(getTopology)
+      .withTopology(() => getTopology)
       .input(InputTopic, strings, strings, input)
       .output(OutputTopic, strings, strings, expected.size)
 
@@ -186,6 +199,9 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
     builder.windowStateTable(StoreName, "x")
       .shouldEqual(expectedCWithTimeStamps.toMap)
+
+    builder.windowStateTable(StoreName, "x", Instant.ofEpochMilli(Long.MinValue), Instant.ofEpochMilli(Long.MaxValue))
+      .shouldEqual(expectedCWithTimeStamps.toMap)
   }
 
   class LastInitializer extends Initializer[Integer] {
@@ -193,15 +209,15 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
   }
 
   class LastAggregator extends Aggregator[String, Integer, Integer] {
-    override def apply(k: String, v: Integer, t: Integer) = v
+    override def apply(k: String, v: Integer, t: Integer): Integer = v
   }
 
   class AddJoiner extends ValueJoiner[Integer, Integer, Integer] {
-    override def apply(v1: Integer, v2: Integer) = v1 + v2
+    override def apply(v1: Integer, v2: Integer): Integer = v1 + v2
   }
 
   class SubJoiner extends ValueJoiner[Integer, Integer, Integer] {
-    override def apply(v1: Integer, v2: Integer) = v1 - v2
+    override def apply(v1: Integer, v2: Integer): Integer = v1 - v2
   }
 
   object Fixtures {
@@ -210,13 +226,13 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val input = Seq(("x", "v1"), ("y", "v2"))
       val expected = Seq(("x", "V1"), ("y", "V2"))
 
-      val strings = Serdes.String()
-      val serdes = Consumed.`with`(strings, strings)
+      val strings: Serde[String] = Serdes.String()
+      val serdes: Consumed[String, String] = Consumed.`with`(strings, strings)
 
       val InputTopic = "input"
       val OutputTopic = "output"
 
-      def topology(builder: StreamsBuilder) = {
+      def topology(builder: StreamsBuilder): Unit = {
         builder.stream(InputTopic, serdes)
           .map[String, String]((k, v) => new KeyValue(k, v.toUpperCase))
           .to(OutputTopic, Produced.`with`(strings, strings))
@@ -225,7 +241,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
     object Multi {
 
-      def int(i: Int) = Integer.valueOf(i)
+      def int(i: Int): Integer = Integer.valueOf(i)
 
       val inputA = Seq(("x", int(1)), ("y", int(2)))
       val inputB = Seq(("x", int(4)), ("y", int(3)))
@@ -251,9 +267,9 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
         1002 -> 1
       )
 
-      val strings = Serdes.String()
-      val ints = Serdes.Integer()
-      val serdes = Consumed.`with`(strings, ints)
+      val strings: Serde[String] = Serdes.String()
+      val ints: Serde[Integer] = Serdes.Integer()
+      val serdes: Consumed[String, Integer] = Consumed.`with`(strings, ints)
 
       val InputATopic = "inputA"
       val InputBTopic = "inputB"
@@ -263,11 +279,11 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val StoreName = "store"
       val Store2Name = "store2"
 
-      def topology1Output(builder: StreamsBuilder) = {
+      def topology1Output(builder: StreamsBuilder): Unit = {
         val streamA = builder.stream(InputATopic, serdes)
         val streamB = builder.stream(InputBTopic, serdes)
 
-        val table = streamA.groupByKey(Serialized.`with`(strings, ints))
+        val table = streamA.groupByKey(Grouped.`with`(strings, ints))
           .aggregate(
             new LastInitializer,
             new LastAggregator,
@@ -278,18 +294,18 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           .to(OutputATopic, Produced.`with`(strings, ints))
       }
 
-      def topology1WindowOutput(builder: StreamsBuilder) = {
+      def topology1WindowOutput(builder: StreamsBuilder): KTable[Windowed[String], lang.Long] = {
         val streamA = builder.stream(InputCTopic, serdes)
-        streamA.groupByKey(Serialized.`with`(strings, ints))
-          .windowedBy(TimeWindows.of(1))
+        streamA.groupByKey(Grouped.`with`(strings, ints))
+          .windowedBy(TimeWindows.of(Duration.ofMillis(1)))
           .count(Materialized.as(StoreName))
       }
 
-      def topology2Output(builder: StreamsBuilder) = {
+      def topology2Output(builder: StreamsBuilder): Unit = {
         val streamA = builder.stream(InputATopic, serdes)
         val streamB = builder.stream(InputBTopic, serdes)
 
-        val table = streamA.groupByKey(Serialized.`with`(strings, ints)).aggregate(
+        val table = streamA.groupByKey(Grouped.`with`(strings, ints)).aggregate(
           new LastInitializer,
           new LastAggregator,
           Materialized.as(StoreName).withKeySerde(strings).withValueSerde(ints))
@@ -301,18 +317,18 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           .to(OutputBTopic, Produced.`with`(strings, ints))
       }
 
-      def topologyTables(builder: StreamsBuilder) = {
+      def topologyTables(builder: StreamsBuilder): Unit = {
         val streamA = builder.stream(InputATopic, serdes)
         val streamB = builder.stream(InputBTopic, serdes)
 
-        val tableA = streamA.groupByKey(Serialized.`with`(strings, ints))
+        val tableA = streamA.groupByKey(Grouped.`with`(strings, ints))
           .aggregate(
             new LastInitializer,
             new LastAggregator,
             Materialized.as(StoreName).withKeySerde(strings).withValueSerde(ints)
           )
 
-        val tableB = streamB.groupByKey(Serialized.`with`(strings, ints))
+        val tableB = streamB.groupByKey(Grouped.`with`(strings, ints))
           .aggregate(
             new LastInitializer,
             new LastAggregator,
@@ -334,7 +350,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 object TimestampExtractors {
 
   class CustomTimestampExtractor extends TimestampExtractor {
-    override def extract(record: ConsumerRecord[AnyRef, AnyRef], previous: Long) = record.value match {
+    override def extract(record: ConsumerRecord[AnyRef, AnyRef], previous: Long): Long = record.value match {
       case value: Integer => value.toLong
       case _ => record.timestamp()
     }
