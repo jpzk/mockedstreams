@@ -6,3 +6,5 @@
 * Daniel Wojda
 * Michal Dziemianko
 * Dan Hamilton
+* Mateusz Owczarek
+

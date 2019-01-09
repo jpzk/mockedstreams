@@ -17,6 +17,7 @@
 
 package com.madewithtea.mockedstreams
 
+import java.time.Instant
 import java.util.{Properties, UUID}
 
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -26,6 +27,7 @@ import org.apache.kafka.streams.test.ConsumerRecordFactory
 import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig, Topology, TopologyTestDriver => Driver}
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 
 object MockedStreams {
 
@@ -36,9 +38,9 @@ object MockedStreams {
                      stateStores: Seq[String] = Seq(),
                      inputs: List[ConsumerRecord[Array[Byte], Array[Byte]]] = List.empty) {
 
-    def config(configuration: Properties) = this.copy(configuration = configuration)
+    def config(configuration: Properties): Builder = this.copy(configuration = configuration)
 
-    def topology(func: StreamsBuilder => Unit) = {
+    def topology(func: StreamsBuilder => Unit): Builder = {
       val buildTopology = () => {
         val builder = new StreamsBuilder()
         func(builder)
@@ -47,17 +49,17 @@ object MockedStreams {
       this.copy(topology = Some(buildTopology))
     }
 
-    def withTopology(t: () => Topology) = this.copy(topology = Some(t))
+    def withTopology(t: () => Topology): Builder = this.copy(topology = Some(t))
 
-    def stores(stores: Seq[String]) = this.copy(stateStores = stores)
+    def stores(stores: Seq[String]): Builder = this.copy(stateStores = stores)
 
-    def input[K, V](topic: String, key: Serde[K], value: Serde[V], records: Seq[(K, V)]) =
+    def input[K, V](topic: String, key: Serde[K], value: Serde[V], records: Seq[(K, V)]): Builder =
       _input(topic, key, value, Left(records))
 
-    def inputWithTime[K, V](topic: String, key: Serde[K], value: Serde[V], records: Seq[(K, V, Long)]) =
+    def inputWithTime[K, V](topic: String, key: Serde[K], value: Serde[V], records: Seq[(K, V, Long)]): Builder =
       _input(topic, key, value, Right(records))
 
-    def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) = {
+    def output[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int): immutable.IndexedSeq[(K, V)] = {
       if (size <= 0) throw new ExpectedOutputIsEmpty
       withProcessedDriver { driver =>
         (0 until size).flatMap { _ =>
@@ -69,20 +71,33 @@ object MockedStreams {
       }
     }
 
-    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int) =
+    def outputTable[K, V](topic: String, key: Serde[K], value: Serde[V], size: Int): Map[K, V] =
       output[K, V](topic, key, value, size).toMap
 
-    def stateTable(name: String) = withProcessedDriver { driver =>
+    def stateTable(name: String): Map[Nothing, Nothing] = withProcessedDriver { driver =>
       val records = driver.getKeyValueStore(name).all()
       val list = records.asScala.toList.map { record => (record.key, record.value) }
       records.close()
       list.toMap
     }
 
+    /**
+      * @throws IllegalArgumentException if duration is negative or can't be represented as long milliseconds
+      */
     def windowStateTable[K, V](name: String,
                                key: K,
                                timeFrom: Long = 0,
-                               timeTo: Long = Long.MaxValue) = withProcessedDriver { driver =>
+                               timeTo: Long = Long.MaxValue): Map[java.lang.Long, V] = {
+      windowStateTable[K, V](name, key, Instant.ofEpochMilli(timeFrom), Instant.ofEpochMilli(timeTo))
+    }
+
+    /**
+      * @throws IllegalArgumentException if duration is negative or can't be represented as long milliseconds
+      */
+    def windowStateTable[K, V](name: String,
+                               key: K,
+                               timeFrom: Instant,
+                               timeTo: Instant): Map[java.lang.Long, V] = withProcessedDriver { driver =>
       val store = driver.getStateStore(name).asInstanceOf[ReadOnlyWindowStore[K, V]]
       val records = store.fetch(key, timeFrom, timeTo)
       val list = records.asScala.toList.map { record => (record.key, record.value) }
@@ -125,7 +140,7 @@ object MockedStreams {
       val driver = stream
       produce(driver)
       val result: T = f(driver)
-      driver.close
+      driver.close()
       result
     }
   }
