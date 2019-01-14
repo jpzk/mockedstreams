@@ -122,7 +122,7 @@ With .input the input records timestamps are set to 0 default timestamp of 0. Th
     )
 
     val builder = MockedStreams()
-      .topology(topology1WindowOutput)
+      .topology(topology1WindowOutput) // Scala DSL
       .inputWithTime(InputCTopic, strings, ints, inputA)
       .stores(Seq(StoreName))
 
