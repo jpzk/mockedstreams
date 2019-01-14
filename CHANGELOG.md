@@ -1,5 +1,11 @@
 # Changelog
 
+## Mocked Streams 3.1
+
+* Added support for Scala DSL in topology method 
+* Java DSL is deprecated in topology method
+* Thanks Michal Dziemianko for migrating to Scala DSL 
+
 ## Mocked Streams 2.2
 
 * Added compatibility with Apache Kafka 2.1 

@@ -30,7 +30,6 @@ import org.apache.kafka.streams.scala.StreamsBuilder
 import org.apache.kafka.streams.scala.kstream.KTable
 import org.scalatest.{FlatSpec, Matchers}
 
-
 class MockedStreamsSpec extends FlatSpec with Matchers {
 
   behavior of "MockedStreams"
@@ -168,10 +167,12 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     builder.windowStateTable(StoreName, "y")
       .shouldEqual(expectedCy.toMap)
 
-    builder.windowStateTable(StoreName, "x", Instant.ofEpochMilli(Long.MinValue), Instant.ofEpochMilli(Long.MaxValue))
+    builder.windowStateTable(StoreName, "x", Instant.ofEpochMilli(Long.MinValue),
+      Instant.ofEpochMilli(Long.MaxValue))
       .shouldEqual(expectedCx.toMap)
 
-    builder.windowStateTable(StoreName, "y", Instant.ofEpochMilli(Long.MinValue), Instant.ofEpochMilli(Long.MaxValue))
+    builder.windowStateTable(StoreName, "y", Instant.ofEpochMilli(Long.MinValue),
+      Instant.ofEpochMilli(Long.MaxValue))
       .shouldEqual(expectedCy.toMap)
   }
 
@@ -204,7 +205,8 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     builder.windowStateTable(StoreName, "x")
       .shouldEqual(expectedCWithTimeStamps.toMap)
 
-    builder.windowStateTable(StoreName, "x", Instant.ofEpochMilli(Long.MinValue), Instant.ofEpochMilli(Long.MaxValue))
+    builder.windowStateTable(StoreName, "x", Instant.ofEpochMilli(Long.MinValue),
+      Instant.ofEpochMilli(Long.MaxValue))
       .shouldEqual(expectedCWithTimeStamps.toMap)
   }
 
@@ -322,9 +324,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
           .to(OutputATopic)
       }
     }
-
   }
-
 }
 
 object TimestampExtractors {
