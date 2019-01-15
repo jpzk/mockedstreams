@@ -3,10 +3,9 @@
 [![Build Status](https://travis-ci.org/jpzk/mockedstreams.svg?branch=master)](https://travis-ci.org/jpzk/mockedstreams)   [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8abac3d072e54fa3a13dc3da04754c7b)](https://www.codacy.com/app/jpzk/mockedstreams?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jpzk/mockedstreams&amp;utm_campaign=Badge_Grade)
 [![codecov](https://codecov.io/gh/jpzk/mockedstreams/branch/master/graph/badge.svg)](https://codecov.io/gh/jpzk/mockedstreams) [![License](http://img.shields.io/:license-Apache%202-grey.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) [![GitHub stars](https://img.shields.io/github/stars/jpzk/mockedstreams.svg?style=flat)](https://github.com/jpzk/mockedstreams/stargazers) 
 
+Mocked Streams 3.1.0 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.11 and 2.12 which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
 
-Mocked Streams 2.2.0 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.11 and 2.12 which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
-
-    libraryDependencies += "com.madewithtea" %% "mockedstreams" % "2.2.0" % "test"
+    libraryDependencies += "com.madewithtea" %% "mockedstreams" % "3.1.0" % "test"
 
 Java 8 port of Mocked Streams is [Mockafka](https://github.com/carlosmenezes/mockafka)
 
@@ -14,6 +13,7 @@ Java 8 port of Mocked Streams is [Mockafka](https://github.com/carlosmenezes/moc
 
 | Mocked Streams Version        | Apache Kafka Version           |
 |------------- |-------------|
+| 3.1.0      | 2.1.0.0 | 
 | 2.2.0      | 2.1.0.0 | 
 | 2.1.0      | 2.0.0.0 | 
   2.0.0      | 2.0.0.0 |
@@ -39,7 +39,7 @@ It wraps the [org.apache.kafka.streams.TopologyTestDriver](https://github.com/ap
     val strings = Serdes.String()
 
     MockedStreams()
-      .topology { builder => builder.stream(...) [...] }
+      .topology { builder => builder.stream(...) [...] } // Scala DSL
       .input("topic-in", strings, strings, input)
       .output("topic-out", strings, strings, exp.size) shouldEqual exp
 
@@ -50,7 +50,7 @@ It also allows you to have multiple input and output streams. If your topology u
     import com.madewithtea.mockedstreams.MockedStreams
 
     val mstreams = MockedStreams()
-      .topology { builder => builder.stream(...) [...] }
+      .topology { builder => builder.stream(...) [...] } // Scala DSL
       .input("in-a", strings, ints, inputA)
       .input("in-b", strings, ints, inputB)
       .stores(Seq("store-name"))
@@ -73,7 +73,7 @@ In the example below, 2 records are first submitted to topic A, then 3 to topic 
     val expectedOutput = Seq(("x", 5), ("y", 5), ("y", 7), ("y", 9))
 
     val builder = MockedStreams()
-      .topology(topologyTables)
+      .topology(topologyTables) // Scala DSL
       .input(InputATopic, strings, ints, firstInputForTopicA)
       .input(InputBTopic, strings, ints, firstInputForTopicB)
       .input(InputATopic, strings, ints, secondInputForTopicA)
@@ -85,7 +85,7 @@ When you define your state stores via .stores(stores: Seq[String]) since 1.2, yo
     import com.madewithtea.mockedstreams.MockedStreams
 
      val mstreams = MockedStreams()
-      .topology { builder => builder.stream(...) [...] }
+      .topology { builder => builder.stream(...) [...] } // Scala DSL
       .input("in-a", strings, ints, inputA)
       .input("in-b", strings, ints, inputB)
       .stores(Seq("store-name"))
@@ -103,7 +103,7 @@ When you define your state stores via .stores(stores: Seq[String]) since 1.2 and
       classOf[TimestampExtractors.CustomTimestampExtractor].getName)
 
     val mstreams = MockedStreams()
-      .topology { builder => builder.stream(...) [...] }
+      .topology { builder => builder.stream(...) [...] } // Scala DSL
       .input("in-a", strings, ints, inputA)
       .stores(Seq("store-name"))
       .config(props)
@@ -137,7 +137,7 @@ Sometimes you need to pass a custom configuration to Kafka Streams:
       props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, classOf[CustomExtractor].getName)
 
       val mstreams = MockedStreams()
-      .topology { builder => builder.stream(...) [...] }
+      .topology { builder => builder.stream(...) [...] } // Scala DSL
       .config(props)
       .input("in-a", strings, ints, inputA)
       .input("in-b", strings, ints, inputB)
