@@ -2,18 +2,17 @@
 lazy val commonSettings = Seq(
   organization := "com.madewithtea",
   version := "3.2.0",
-  scalaVersion := "2.12.7",
-  crossScalaVersions := Seq("2.12.7", "2.11.12"),
+  scalaVersion := "2.12.8",
+  crossScalaVersions := Seq("2.12.8", "2.11.12"),
   description := "Topology Unit-Testing Library for Apache Kafka / Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
   scalacOptions := Seq("-Xexperimental"))
 
 val scalaTestVersion = "3.0.5"
 val rocksDBVersion = "5.17.2"
-val kafkaVersion = "2.1.0"
+val kafkaVersion = "2.1.1"
 
 lazy val kafka = Seq(
-  "javax.ws.rs" % "javax.ws.rs-api" % "2.1.1" jar(),
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
   "org.apache.kafka" % "kafka-clients" % kafkaVersion classifier "test",
   "org.apache.kafka" % "kafka-streams" % kafkaVersion,
