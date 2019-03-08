@@ -1,5 +1,10 @@
 # Changelog
 
+## Mocked Streams 3.2
+
+* Added support for Apache Kafka 2.1.1
+* Thanks Matteo Gazzetta
+
 ## Mocked Streams 3.1
 
 * Added support for Scala DSL in topology method 
