@@ -1,5 +1,9 @@
 # Changelog
 
+## Mocked Streams 3.3
+
+* Added support for Apache Kafka 2.2.0
+
 ## Mocked Streams 3.2
 
 * Added support for Apache Kafka 2.1.1
