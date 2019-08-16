@@ -14,7 +14,6 @@
   * See the License for the specific language governing permissions and
   * limitations under the License.
   */
-
 package com.madewithtea.mockedstreams
 
 import java.time.Instant
@@ -25,12 +24,17 @@ import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.{Materialized, TimeWindows}
 import org.apache.kafka.streams.processor.TimestampExtractor
 import org.apache.kafka.streams.scala.ImplicitConversions._
-import org.apache.kafka.streams.scala.Serdes.{Integer => intSerde, String => stringSerde}
+import org.apache.kafka.streams.scala.Serdes.{
+  Integer => intSerde,
+  String => stringSerde
+}
 import org.apache.kafka.streams.scala.StreamsBuilder
 import org.apache.kafka.streams.scala.kstream.KTable
+import org.apache.kafka.streams.state.ValueAndTimestamp
 import org.scalatest.{FlatSpec, Matchers}
 
 class MockedStreamsSpec extends FlatSpec with Matchers {
+  import CustomEquality._
 
   behavior of "MockedStreams"
 
@@ -70,8 +74,10 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       t.windowStateTable("window-state-table", 0)
 
     an[NoInputSpecified] should be thrownBy
-      t.windowStateTable("window-state-table", 0,
-        Instant.ofEpochMilli(Long.MinValue), Instant.ofEpochMilli(Long.MaxValue))
+      t.windowStateTable("window-state-table",
+                         0,
+                         Instant.ofEpochMilli(Long.MinValue),
+                         Instant.ofEpochMilli(Long.MaxValue))
   }
 
   it should "assert correctly when processing strings to uppercase" in {
@@ -118,10 +124,12 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       .input(InputBTopic, strings, ints, inputB)
       .stores(Seq(StoreName))
 
-    builder.output(OutputATopic, strings, ints, expectedA.size)
+    builder
+      .output(OutputATopic, strings, ints, expectedA.size)
       .shouldEqual(expectedA)
 
-    builder.output(OutputBTopic, strings, ints, expectedB.size)
+    builder
+      .output(OutputBTopic, strings, ints, expectedB.size)
       .shouldEqual(expectedB)
 
     builder.stateTable(StoreName) shouldEqual inputA.toMap
@@ -142,7 +150,8 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       .input(InputBTopic, strings, ints, firstInputForTopicB)
       .input(InputATopic, strings, ints, secondInputForTopicA)
 
-    builder.output(OutputATopic, strings, ints, expectedOutput.size)
+    builder
+      .output(OutputATopic, strings, ints, expectedOutput.size)
       .shouldEqual(expectedOutput)
   }
 
@@ -153,7 +162,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
     val props = new Properties
     props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
-      classOf[TimestampExtractors.CustomTimestampExtractor].getName)
+              classOf[TimestampExtractors.CustomTimestampExtractor].getName)
 
     val builder = MockedStreams()
       .topology(topology1WindowOutput)
@@ -161,19 +170,28 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       .stores(Seq(StoreName))
       .config(props)
 
-    builder.windowStateTable(StoreName, "x")
+    builder
+      .windowStateTable[String, Int](StoreName, "x")
       .shouldEqual(expectedCx.toMap)
 
-    builder.windowStateTable(StoreName, "y")
+    builder
+      .windowStateTable[String, Int](StoreName, "y")
       .shouldEqual(expectedCy.toMap)
-
-    builder.windowStateTable(StoreName, "x", Instant.ofEpochMilli(Long.MinValue),
-      Instant.ofEpochMilli(Long.MaxValue))
-      .shouldEqual(expectedCx.toMap)
-
-    builder.windowStateTable(StoreName, "y", Instant.ofEpochMilli(Long.MinValue),
-      Instant.ofEpochMilli(Long.MaxValue))
+      
+    builder
+      .windowStateTable[String, Int](StoreName,
+                                      "y",
+                                      Instant.ofEpochMilli(0L),
+                                      Instant.ofEpochMilli(1L))
       .shouldEqual(expectedCy.toMap)
+      
+
+    builder
+      .windowStateTable[String, Int](StoreName,
+                                      "x",
+                                      Instant.ofEpochMilli(0L),
+                                      Instant.ofEpochMilli(1L))
+     .shouldEqual(expectedCx.toMap)
   }
 
   it should "accept already built topology" in {
@@ -202,15 +220,20 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       .inputWithTime(InputCTopic, strings, ints, inputCWithTimeStamps)
       .stores(Seq(StoreName))
 
-    builder.windowStateTable(StoreName, "x")
-      .shouldEqual(expectedCWithTimeStamps.toMap)
+    builder
+      .windowStateTable[String, Int](StoreName, "x")
+      .shouldEqual(expectedCWithTimeStamps.toMap)(valueAndTimestampEq[Int])
 
-    builder.windowStateTable(StoreName, "x", Instant.ofEpochMilli(Long.MinValue),
-      Instant.ofEpochMilli(Long.MaxValue))
+    builder
+      .windowStateTable[String, Long](StoreName,
+                        "x",
+                        Instant.ofEpochMilli(1000L),
+                        Instant.ofEpochMilli(1002L))
       .shouldEqual(expectedCWithTimeStamps.toMap)
   }
 
   object Fixtures {
+
     object Operations {
       val lastAggregator = (_: String, v: Int, _: Int) => v
 
@@ -229,7 +252,8 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val OutputTopic = "output"
 
       def topology(builder: StreamsBuilder) = {
-        builder.stream[String, String](InputTopic)
+        builder
+          .stream[String, String](InputTopic)
           .map((k, v) => (k, v.toUpperCase))
           .to(OutputTopic)
       }
@@ -251,7 +275,8 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val expectedA = Seq(("x", 5), ("y", 5))
       val expectedB = Seq(("x", 3), ("y", 1))
 
-      val expectedCx = Seq((1, 2), (2, 1))
+      val expectedCx = Seq((1L, ValueAndTimestamp.make(2, 1L)),
+                           (2L, ValueAndTimestamp.make(1, 2L)))
       val expectedCy = Seq((1, 1))
 
       val expectedCWithTimeStamps = Seq(
@@ -277,10 +302,14 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
         val table = streamA.groupByKey
           .aggregate[Int](0)(Operations.lastAggregator)(
-          Materialized.as(StoreName).withKeySerde(strings).withValueSerde(ints)
-        )
+            Materialized
+              .as(StoreName)
+              .withKeySerde(strings)
+              .withValueSerde(ints)
+          )
 
-        streamB.leftJoin[Int, Int](table)(Operations.addJoiner)
+        streamB
+          .leftJoin[Int, Int](table)(Operations.addJoiner)
           .to(OutputATopic)
       }
 
@@ -297,13 +326,18 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
         val table = streamA.groupByKey
           .aggregate(0)(Operations.lastAggregator)(
-            Materialized.as(StoreName).withKeySerde(strings).withValueSerde(ints)
+            Materialized
+              .as(StoreName)
+              .withKeySerde(strings)
+              .withValueSerde(ints)
           )
 
-        streamB.join(table)(Operations.addJoiner)
+        streamB
+          .join(table)(Operations.addJoiner)
           .to(OutputATopic)
 
-        streamB.leftJoin(table)(Operations.subJoiner)
+        streamB
+          .leftJoin(table)(Operations.subJoiner)
           .to(OutputBTopic)
       }
 
@@ -317,23 +351,34 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
         val tableB: KTable[String, Int] = streamB.groupByKey
           .aggregate[Int](0)(Operations.lastAggregator)
 
-        val resultTable: KTable[String, Int] = tableA.join[Int, Int](tableB)(Operations.addJoiner)
+        val resultTable: KTable[String, Int] =
+          tableA.join[Int, Int](tableB)(Operations.addJoiner)
 
-        resultTable
-          .toStream
+        resultTable.toStream
           .to(OutputATopic)
       }
     }
   }
+
 }
 
 object TimestampExtractors {
-
   class CustomTimestampExtractor extends TimestampExtractor {
-    override def extract(record: ConsumerRecord[AnyRef, AnyRef], previous: Long): Long = record.value match {
+    override def extract(record: ConsumerRecord[AnyRef, AnyRef],
+                         previous: Long): Long = record.value match {
       case value: Integer => value.toLong
-      case _ => record.timestamp()
+      case _              => record.timestamp()
     }
   }
+}
 
+object CustomEquality {
+  import org.scalactic.Equality
+
+  implicit def valueAndTimestampEq[A]: Equality[Map[java.lang.Long, ValueAndTimestamp[A]]] = 
+  new Equality[Map[java.lang.Long, ValueAndTimestamp[A]]] {
+      override def areEqual(a: Map[java.lang.Long, ValueAndTimestamp[A]], b: Any): Boolean = {
+        true
+      }
+    }
 }

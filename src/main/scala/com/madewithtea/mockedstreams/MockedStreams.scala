@@ -22,10 +22,10 @@ import java.util.{Properties, UUID}
 
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.Serde
-import org.apache.kafka.streams.state.ReadOnlyWindowStore
+import org.apache.kafka.streams.scala.StreamsBuilder
+import org.apache.kafka.streams.state.ValueAndTimestamp
 import org.apache.kafka.streams.test.ConsumerRecordFactory
 import org.apache.kafka.streams.{StreamsConfig, Topology, TopologyTestDriver => Driver}
-import org.apache.kafka.streams.scala.StreamsBuilder
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -88,7 +88,7 @@ object MockedStreams {
     def windowStateTable[K, V](name: String,
                                key: K,
                                timeFrom: Long = 0,
-                               timeTo: Long = Long.MaxValue): Map[java.lang.Long, V] = {
+                               timeTo: Long = Long.MaxValue): Map[java.lang.Long, ValueAndTimestamp[V]] = {
       windowStateTable[K, V](name, key, Instant.ofEpochMilli(timeFrom), Instant.ofEpochMilli(timeTo))
     }
 
@@ -98,13 +98,14 @@ object MockedStreams {
     def windowStateTable[K, V](name: String,
                                key: K,
                                timeFrom: Instant,
-                               timeTo: Instant): Map[java.lang.Long, V] = withProcessedDriver { driver =>
-      val store = driver.getStateStore(name).asInstanceOf[ReadOnlyWindowStore[K, V]]
-      val records = store.fetch(key, timeFrom, timeTo)
-      val list = records.asScala.toList.map { record => (record.key, record.value) }
-      records.close()
-      list.toMap
-    }
+                               timeTo: Instant): Map[java.lang.Long, ValueAndTimestamp[V]] =
+      withProcessedDriver { driver =>
+        val store = driver.getTimestampedWindowStore[K, V](name)
+        val records = store.fetch(key, timeFrom, timeTo)
+        val list = records.asScala.toList.map { record => (record.key, record.value) }
+        records.close()
+        list.toMap
+      }
 
     private def _input[K, V](topic: String, key: Serde[K], value: Serde[V],
                              records: Either[Seq[(K, V)], Seq[(K, V, Long)]]) = {
@@ -128,7 +129,7 @@ object MockedStreams {
       val props = new Properties
       props.put(StreamsConfig.APPLICATION_ID_CONFIG, s"mocked-${UUID.randomUUID().toString}")
       props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-      props.putAll(configuration)
+      configuration.asScala.foreach { case (k, v) => props.put(k, v) }
       new Driver(topology.getOrElse(throw new NoTopologySpecified)(), props)
     }
 
