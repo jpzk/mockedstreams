@@ -70,11 +70,10 @@ pomExtra :=
 
 
 micrositeName := "Mocked Streams"
-micrositeDescription := "Scala Library for Unit-Testing Processing Topologies in Kafka Streams"
+micrositeDescription := "Unit-Testing Topologies in Kafka Streams"
+micrositeDataDirectory := /docs
 micrositeUrl := "http://mockedstreams.madewithtea.com"
 micrositeAuthor := "Jendrik Poloczek"
-micrositeBaseUrl := "/mockedstreams"
-micrositeDocumentationUrl := "/mockedstreams/docs"
 micrositeTwitter := "@madewithtea"
 micrositeTwitterCreator := "@madewithtea"
 micrositeGithubOwner := "jpzk"
