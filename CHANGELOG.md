@@ -1,5 +1,10 @@
 # Changelog
 
+## Mocked Streams 3.4
+
+* Added support for Apache 2.3.0
+* Dropped support for Scala 2.11
+
 ## Mocked Streams 3.3
 
 * Added support for Apache Kafka 2.2.0
