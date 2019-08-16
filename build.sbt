@@ -69,3 +69,21 @@ pomExtra :=
     </developers>
 
 
+micrositeName := "Mocked Streams"
+micrositeDescription := "Scala Library for Unit-Testing Processing Topologies in Kafka Streams"
+micrositeUrl := "http://mockedstreams.madewithtea.com"
+micrositeAuthor := "Jendrik Poloczek"
+micrositeBaseUrl := "/mockedstreams"
+micrositeDocumentationUrl := "/mockedstreams/docs"
+micrositeTwitter := "@madewithtea"
+micrositeTwitterCreator := "@madewithtea"
+micrositeGithubOwner := "jpzk"
+micrositeGithubRepo := "mockedstreams"
+micrositeCompilingDocsTool := WithMdoc
+
+lazy val docs = project       // new documentation project
+  .in(file("ms-docs")) // important: it must not be docs/
+  .dependsOn(mockedstreams)
+  .enablePlugins(MdocPlugin)
+
+enablePlugins(MicrositesPlugin)
