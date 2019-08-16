@@ -2,7 +2,7 @@
 lazy val commonSettings = Seq(
   organization := "com.madewithtea",
   version := "3.4.0",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.11.12",
   crossScalaVersions := Seq("2.12.8", "2.11.12"),
   description := "Topology Unit-Testing Library for Apache Kafka / Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
@@ -71,7 +71,6 @@ pomExtra :=
 
 micrositeName := "Mocked Streams"
 micrositeDescription := "Unit-Testing Topologies in Kafka Streams"
-micrositeDataDirectory := /docs
 micrositeUrl := "http://mockedstreams.madewithtea.com"
 micrositeAuthor := "Jendrik Poloczek"
 micrositeTwitter := "@madewithtea"

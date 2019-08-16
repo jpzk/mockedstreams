@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/jpzk/mockedstreams.svg?branch=master)](https://travis-ci.org/jpzk/mockedstreams)   [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8abac3d072e54fa3a13dc3da04754c7b)](https://www.codacy.com/app/jpzk/mockedstreams?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jpzk/mockedstreams&amp;utm_campaign=Badge_Grade)
 [![codecov](https://codecov.io/gh/jpzk/mockedstreams/branch/master/graph/badge.svg)](https://codecov.io/gh/jpzk/mockedstreams) [![License](http://img.shields.io/:license-Apache%202-grey.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) [![GitHub stars](https://img.shields.io/github/stars/jpzk/mockedstreams.svg?style=flat)](https://github.com/jpzk/mockedstreams/stargazers) 
 
-Mocked Streams 3.4.0 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.11 and 2.12 which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
+Mocked Streams 3.4.0 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.12.X which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
 
     libraryDependencies += "com.madewithtea" %% "mockedstreams" % "3.4.0" % "test"
 
@@ -19,7 +19,7 @@ Java 8 port of Mocked Streams is [Mockafka](https://github.com/carlosmenezes/moc
 | 3.1.0      | 2.1.0.0 | 
 | 2.2.0      | 2.1.0.0 | 
 | 2.1.0      | 2.0.0.0 | 
-  2.0.0      | 2.0.0.0 |
+| 2.0.0      | 2.0.0.0 |
 | 1.8.0      | 1.1.1.0 |
 | 1.7.0      | 1.1.0.0 |
 | 1.6.0      | 1.0.1.0 |
@@ -29,7 +29,7 @@ Java 8 port of Mocked Streams is [Mockafka](https://github.com/carlosmenezes/moc
 | 1.2.1      | 0.10.2.1 | 
 | 1.2.0      | 0.10.2.0 | 
 | 1.1.0      | 0.10.1.1 | 
-| 1.0.0      | 0.10.1.0      |    
+| 1.0.0      | 0.10.1.0 |    
 
 ## Simple Example
 
