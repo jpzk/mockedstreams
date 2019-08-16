@@ -55,10 +55,6 @@ pomExtra :=
         <distribution>repo</distribution>
       </license>
     </licenses>
-    <scm>
-      <url>git@github.com:jpzk/mockedstreams.git</url>
-      <connection>scm:git:git@github.com:jpzk/mockedstreams.git</connection>
-    </scm>
     <developers>
       <developer>
         <id>jpzk</id>
@@ -71,6 +67,8 @@ pomExtra :=
 micrositeName := "Mocked Streams"
 micrositeDescription := "Unit-Testing Topologies in Kafka Streams"
 micrositeUrl := "http://mockedstreams.madewithtea.com"
+micrositeGithubOwner := "jpzk"
+micrositeGithubRepo := "mockedstreams"
 micrositeAuthor := "Jendrik Poloczek"
 micrositeTwitter := "@madewithtea"
 micrositeTwitterCreator := "@madewithtea"
