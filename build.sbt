@@ -2,8 +2,7 @@
 lazy val commonSettings = Seq(
   organization := "com.madewithtea",
   version := "3.4.0",
-  scalaVersion := "2.11.12",
-  crossScalaVersions := Seq("2.12.8", "2.11.12"),
+  scalaVersion := "2.12.8",
   description := "Topology Unit-Testing Library for Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
   scalacOptions := Seq("-Xexperimental"))
