@@ -4,7 +4,7 @@ lazy val commonSettings = Seq(
   version := "3.4.0",
   scalaVersion := "2.11.12",
   crossScalaVersions := Seq("2.12.8", "2.11.12"),
-  description := "Topology Unit-Testing Library for Apache Kafka / Kafka Streams",
+  description := "Topology Unit-Testing Library for Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
   scalacOptions := Seq("-Xexperimental"))
 
@@ -75,8 +75,6 @@ micrositeUrl := "http://mockedstreams.madewithtea.com"
 micrositeAuthor := "Jendrik Poloczek"
 micrositeTwitter := "@madewithtea"
 micrositeTwitterCreator := "@madewithtea"
-micrositeGithubOwner := "jpzk"
-micrositeGithubRepo := "mockedstreams"
 micrositeCompilingDocsTool := WithMdoc
 
 lazy val docs = project       // new documentation project
