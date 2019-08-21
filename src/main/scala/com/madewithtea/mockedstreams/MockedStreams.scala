@@ -85,10 +85,8 @@ object MockedStreams {
       if (size <= 0) throw new ExpectedOutputIsEmpty
       withProcessedDriver { driver =>
         (0 until size).flatMap { _ =>
-          Option(driver.readOutput(topic, key.deserializer, value.deserializer)) match {
-            case Some(record) => Some((record.key, record.value))
-            case None         => None
-          }
+          Option(driver.readOutput(topic, key.deserializer, value.deserializer))
+          .map(r => (r.key, r.value))
         }
       }
     }
