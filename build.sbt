@@ -67,12 +67,17 @@ pomExtra :=
 micrositeName := "Mocked Streams"
 micrositeDescription := "Unit-Testing Topologies in Kafka Streams"
 micrositeUrl := "http://mockedstreams.madewithtea.com"
+micrositeDocumentationUrl := "/docs"
+micrositeGitterChannel := false
+micrositeDocumentationLabelDescription := "Documentation"
+micrositeDataDirectory := (resourceDirectory in Compile).value / "docs" / "data"
 micrositeGithubOwner := "jpzk"
 micrositeGithubRepo := "mockedstreams"
 micrositeAuthor := "Jendrik Poloczek"
 micrositeTwitter := "@madewithtea"
 micrositeTwitterCreator := "@madewithtea"
 micrositeCompilingDocsTool := WithMdoc
+micrositeShareOnSocial := true
 
 lazy val docs = project       // new documentation project
   .in(file("ms-docs")) // important: it must not be docs/
