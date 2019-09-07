@@ -1,7 +1,6 @@
 ---
 layout: docs 
 title:  "Record Order"
-position: 4
 ---
 
 ## Record order and multiple emissions

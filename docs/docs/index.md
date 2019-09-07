@@ -1,7 +1,6 @@
 ---
 layout: docs
 title: Getting started
-position: 1
 ---
 
 ## Getting Started

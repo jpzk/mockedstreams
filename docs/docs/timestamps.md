@@ -1,7 +1,6 @@
 ---
 layout: docs 
 title:  "Adding Timestamps"
-position: 6
 ---
 
 ## Adding Timestamps

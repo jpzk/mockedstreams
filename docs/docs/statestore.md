@@ -1,7 +1,6 @@
 ---
 layout: docs 
 title:  "State Stores"
-position: 5
 ---
 
 ## State Stores

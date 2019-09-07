@@ -1,7 +1,6 @@
 ---
 layout: docs
 title: Custom Configuration
-position: 8
 ---
 
 ## Custom Streams Configuration

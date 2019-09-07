@@ -77,7 +77,6 @@ micrositeAuthor := "Jendrik Poloczek"
 micrositeTwitter := "@madewithtea"
 micrositeTwitterCreator := "@madewithtea"
 micrositeCompilingDocsTool := WithMdoc
-
 micrositeShareOnSocial := true
 
 lazy val docs = project       // new documentation project

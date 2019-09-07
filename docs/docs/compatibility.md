@@ -1,7 +1,6 @@
 ---
 layout: docs
 title: Kafka Compatibility
-position: 2
 ---
 
 ## Apache Kafka Compatibility

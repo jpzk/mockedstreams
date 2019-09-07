@@ -1,7 +1,6 @@
 ---
 layout: docs 
 title:  "Multiple Inputs and Outputs"
-position: 3
 ---
 
 ## Multiple Input / Output Example and State

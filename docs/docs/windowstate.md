@@ -1,7 +1,6 @@
 ---
 layout: docs 
 title:  "Windowed State Stores"
-position: 7
 ---
 
 ## Window State Store 
