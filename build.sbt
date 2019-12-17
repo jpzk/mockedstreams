@@ -1,15 +1,15 @@
 
 lazy val commonSettings = Seq(
   organization := "com.madewithtea",
-  version := "3.4.0",
-  scalaVersion := "2.12.8",
+  version := "3.4.1",
+  scalaVersion := "2.13.1",
   description := "Topology Unit-Testing Library for Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
   scalacOptions := Seq("-Xexperimental"))
 
 val scalaTestVersion = "3.0.8"
 val rocksDBVersion = "5.18.3"
-val kafkaVersion = "2.3.0"
+val kafkaVersion = "2.4.0"
 
 lazy val kafka = Seq(
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
@@ -63,25 +63,7 @@ pomExtra :=
       </developer>
     </developers>
 
-
-micrositeName := "Mocked Streams"
-micrositeDescription := "Unit-Testing Topologies in Kafka Streams"
-micrositeUrl := "http://mockedstreams.madewithtea.com"
-micrositeDocumentationUrl := "/docs"
-micrositeGitterChannel := false
-micrositeDocumentationLabelDescription := "Documentation"
-micrositeDataDirectory := (resourceDirectory in Compile).value / "docs" / "data"
-micrositeGithubOwner := "jpzk"
-micrositeGithubRepo := "mockedstreams"
-micrositeAuthor := "Jendrik Poloczek"
-micrositeTwitter := "@madewithtea"
-micrositeTwitterCreator := "@madewithtea"
-micrositeCompilingDocsTool := WithMdoc
-micrositeShareOnSocial := true
-
 lazy val docs = project       // new documentation project
   .in(file("ms-docs")) // important: it must not be docs/
   .dependsOn(mockedstreams)
   .enablePlugins(MdocPlugin)
-
-enablePlugins(MicrositesPlugin)
