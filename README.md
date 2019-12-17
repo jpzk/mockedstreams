@@ -154,6 +154,8 @@ Sometimes you need to pass a custom configuration to Kafka Streams:
  
 ## Companies using Mocked Streams 
 
+* [BlaBlaCar](https://medium.com/blablacar-tech)
+* [PMU.fr](https://www.pmu.fr/)
 * [Sky.uk](https://www.sky.com/)
 * [Hive Streaming AB](https://www.hivestreaming.com/)
 * [moip, a wirecard company](https://moip.com.br/en/)
