@@ -1,5 +1,10 @@
 # Changelog
 
+## Mocked Streams 3.5
+
+* Added support for Apache 2.4.0
+* Updated sbt-mdoc to 2.0.2
+
 ## Mocked Streams 3.4
 
 * Added support for Apache 2.3.0
