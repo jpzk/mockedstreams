@@ -1,4 +1,4 @@
-target/**
-.idea/**
-project/target/**
-project/project/**
+target
+.idea
+.bloop
+.metals
