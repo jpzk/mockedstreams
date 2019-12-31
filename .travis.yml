@@ -1,12 +1,10 @@
 language: scala
-scala:
-  - 2.12.8
 
 jdk:
-  - openjdk11 
+  - openjdk11
 
 script:
-  - sbt clean coverage test coverageReport
+  - sbt clean coverage +test coverageReport
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) -t "4b854b7d-2c0e-42b8-80dd-4d2bd4a60535"
