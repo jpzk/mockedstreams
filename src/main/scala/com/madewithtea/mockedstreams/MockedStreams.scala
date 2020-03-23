@@ -185,6 +185,11 @@ object MockedStreams {
       new Driver(topology.getOrElse(throw new NoTopologySpecified)(), props)
     }
 
+    /**
+      * Advances wall clock time with some amount of ms
+      * @param time
+      * @return
+      */
     def advanceWallClock(time: Long): Builder = {
       this.copy(inputs = this.inputs :+ WallclockTime(time))
     }
