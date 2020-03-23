@@ -37,11 +37,15 @@ object MockedStreams {
 
   def apply() = Builder()
 
+  sealed trait StreamsInput
+  case class Record(consumerRecord: ConsumerRecord[Array[Byte], Array[Byte]]) extends StreamsInput
+  case class WallclockTime(time: Long) extends StreamsInput
+
   case class Builder(
       topology: Option[() => Topology] = None,
       configuration: Properties = new Properties(),
       stateStores: Seq[String] = Seq(),
-      inputs: List[ConsumerRecord[Array[Byte], Array[Byte]]] = List.empty
+      inputs: List[StreamsInput] = List.empty
   ) {
 
     def config(configuration: Properties): Builder =
@@ -158,12 +162,12 @@ object MockedStreams {
       val updatedRecords = records match {
         case Left(withoutTime) =>
           withoutTime.foldLeft(inputs) {
-            case (events, (k, v)) => events :+ factory.create(topic, k, v)
+            case (events, (k, v)) => events :+ Record(factory.create(topic, k, v))
           }
         case Right(withTime) =>
           withTime.foldLeft(inputs) {
             case (events, (k, v, timestamp)) =>
-              events :+ factory.create(topic, k, v, timestamp)
+              events :+ Record(factory.create(topic, k, v, timestamp))
           }
       }
       this.copy(inputs = updatedRecords)
@@ -181,8 +185,15 @@ object MockedStreams {
       new Driver(topology.getOrElse(throw new NoTopologySpecified)(), props)
     }
 
+    def advanceWallClock(time: Long): Builder = {
+      this.copy(inputs = this.inputs :+ WallclockTime(time))
+    }
+
     private def produce(driver: Driver): Unit =
-      inputs.foreach(driver.pipeInput)
+      inputs.foreach {
+        case Record(record) => driver.pipeInput(record)
+        case WallclockTime(time) => driver.advanceWallClockTime(time)
+      }
 
     private def withProcessedDriver[T](f: Driver => T): T = {
       if (inputs.isEmpty) throw new NoInputSpecified

@@ -1,11 +1,12 @@
-
 lazy val commonSettings = Seq(
   organization := "com.madewithtea",
-  version := "3.4.1",
-  scalaVersion := "2.13.1",
+  version := "3.5.1",
+  scalaVersion := "2.12.10",
+  crossScalaVersions := List("2.12.10", "2.13.1"),
   description := "Topology Unit-Testing Library for Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
-  scalacOptions := Seq("-Xexperimental"))
+  scalacOptions := Seq("-Xexperimental")
+)
 
 val scalaTestVersion = "3.0.8"
 val rocksDBVersion = "5.18.3"
@@ -23,9 +24,9 @@ lazy val kafka = Seq(
 lazy val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 lazy val rocksDB = "org.rocksdb" % "rocksdbjni" % rocksDBVersion % "test"
 
-lazy val mockedstreams = (project in file(".")).
-  settings(commonSettings: _*).
-  settings(
+lazy val mockedstreams = (project in file("."))
+  .settings(commonSettings: _*)
+  .settings(
     libraryDependencies ++= Seq(
       scalaTest,
       rocksDB
@@ -44,7 +45,9 @@ publishMavenStyle := true
 
 publishArtifact in Test := false
 
-pomIncludeRepository := { _ => false }
+pomIncludeRepository := { _ =>
+  false
+}
 
 pomExtra :=
   <url>https://www.madewithtea.com/pages/mocked-streams.html</url>
@@ -63,7 +66,24 @@ pomExtra :=
       </developer>
     </developers>
 
-lazy val docs = project       // new documentation project
+micrositeName := "Mocked Streams"
+micrositeDescription := "Unit-Testing Topologies in Kafka Streams"
+micrositeUrl := "http://mockedstreams.madewithtea.com"
+micrositeDocumentationUrl := "/docs"
+micrositeGitterChannel := false
+micrositeDocumentationLabelDescription := "Documentation"
+micrositeDataDirectory := (resourceDirectory in Compile).value / "docs" / "data"
+micrositeGithubOwner := "jpzk"
+micrositeGithubRepo := "mockedstreams"
+micrositeAuthor := "Jendrik Poloczek"
+micrositeTwitter := "@madewithtea"
+micrositeTwitterCreator := "@madewithtea"
+micrositeCompilingDocsTool := WithMdoc
+micrositeShareOnSocial := true
+
+lazy val docs = project // new documentation project
   .in(file("ms-docs")) // important: it must not be docs/
   .dependsOn(mockedstreams)
   .enablePlugins(MdocPlugin)
+
+enablePlugins(MicrositesPlugin)

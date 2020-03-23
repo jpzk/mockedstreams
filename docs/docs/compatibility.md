@@ -9,6 +9,8 @@ Please use the corresponding Mocked Streams version to a concrete Apache Kafka v
 
 | Mocked Streams Version        | Apache Kafka Version           |
 |------------- |-------------|
+| 3.5.1      | 2.4.0.0 |
+| 3.5.0      | 2.4.0.0 |
 | 3.4.0      | 2.3.0.0 |
 | 3.3.0      | 2.2.0.0 |
 | 3.2.0      | 2.1.1.0 | 

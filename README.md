@@ -2,12 +2,13 @@
 
 [![Build Status](https://travis-ci.org/jpzk/mockedstreams.svg?branch=master)](https://travis-ci.org/jpzk/mockedstreams)   [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8abac3d072e54fa3a13dc3da04754c7b)](https://www.codacy.com/app/jpzk/mockedstreams?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jpzk/mockedstreams&amp;utm_campaign=Badge_Grade)
 [![codecov](https://codecov.io/gh/jpzk/mockedstreams/branch/master/graph/badge.svg)](https://codecov.io/gh/jpzk/mockedstreams) [![License](http://img.shields.io/:license-Apache%202-grey.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) [![GitHub stars](https://img.shields.io/github/stars/jpzk/mockedstreams.svg?style=flat)](https://github.com/jpzk/mockedstreams/stargazers) 
+[![Maven Central](https://img.shields.io/maven-central/v/com.madewithtea/mockedstreams_2.12.svg)](http://search.maven.org/#search%7Cga%7C1%7Cmockedstreams) 
 
 Documentation located at http://mockedstreams.madewithtea.com/
 
-Mocked Streams 3.4.0 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.12.X which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
+Mocked Streams 3.5.1 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.12 and 2.13 which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
 
-    libraryDependencies += "com.madewithtea" %% "mockedstreams" % "3.4.0" % "test"
+    libraryDependencies += "com.madewithtea" %% "mockedstreams" % "3.5.1" % "test"
 
 Java 8 port of Mocked Streams is [Mockafka](https://github.com/carlosmenezes/mockafka)
 
@@ -15,6 +16,8 @@ Java 8 port of Mocked Streams is [Mockafka](https://github.com/carlosmenezes/moc
 
 | Mocked Streams Version        | Apache Kafka Version           |
 |------------- |-------------|
+| 3.5.1      | 2.4.0.0 |
+| 3.5.0      | 2.4.0.0 |
 | 3.4.0      | 2.3.0.0 |
 | 3.3.0      | 2.2.0.0 |
 | 3.2.0      | 2.1.1.0 | 
@@ -153,6 +156,8 @@ Sometimes you need to pass a custom configuration to Kafka Streams:
  
 ## Companies using Mocked Streams 
 
+* [BlaBlaCar](https://medium.com/blablacar-tech)
+* [PMU.fr](https://www.pmu.fr/)
 * [Sky.uk](https://www.sky.com/)
 * [Hive Streaming AB](https://www.hivestreaming.com/)
 * [moip, a wirecard company](https://moip.com.br/en/)
