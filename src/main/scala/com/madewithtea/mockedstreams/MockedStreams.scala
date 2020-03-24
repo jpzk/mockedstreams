@@ -110,7 +110,7 @@ object MockedStreams {
     }
 
     /**
-      * @throws IllegalArgumentException if duration is negative or can't be represented as long milliseconds
+      * @throws lllegalArgumentException if duration is negative or can't be represented as long milliseconds
       */
     def windowStateTable[K, V](
         name: String,
