@@ -1,5 +1,6 @@
 # Contributors
 
+* Ivan Orone
 * Hamidreza Afzali 
 * Jendrik Poloczek 
 * Svend Vanderveken
