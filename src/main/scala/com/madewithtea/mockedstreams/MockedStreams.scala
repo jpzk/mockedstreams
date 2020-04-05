@@ -16,7 +16,7 @@
   */
 package com.madewithtea.mockedstreams
 
-import java.time.Instant
+import java.time.{Duration, Instant}
 import java.util.{Properties, UUID}
 
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -37,15 +37,22 @@ object MockedStreams {
 
   def apply() = Builder()
 
-  sealed trait StreamsInput
-  case class Record(consumerRecord: ConsumerRecord[Array[Byte], Array[Byte]]) extends StreamsInput
-  case class WallclockTime(time: Long) extends StreamsInput
+  sealed trait Input
+  case class Record(consumerRecord: ConsumerRecord[Array[Byte], Array[Byte]])
+      extends Input
+  case class WallClock(duration: Long) extends Input
+
+  implicit def recordsInstant[K,V](list: Seq[(K,V,Instant)]) = RecordsInstant(list)
+  implicit def recordsLong[K,V](list: Seq[(K,V,Long)]) = RecordsLong(list)
+
+  case class RecordsInstant[K, V](seq: Seq[(K, V, Instant)])
+  case class RecordsLong[K, V](seq: Seq[(K, V, Long)])
 
   case class Builder(
       topology: Option[() => Topology] = None,
       configuration: Properties = new Properties(),
       stateStores: Seq[String] = Seq(),
-      inputs: List[StreamsInput] = List.empty
+      inputs: List[Input] = List.empty
   ) {
 
     def config(configuration: Properties): Builder =
@@ -76,9 +83,18 @@ object MockedStreams {
         topic: String,
         key: Serde[K],
         value: Serde[V],
-        records: Seq[(K, V, Long)]
+        records: RecordsLong[K, V]
+    ): Builder = _input[K, V](topic, key, value, Right(records.seq))
+
+    def inputWithTime[K, V](
+        topic: String,
+        key: Serde[K],
+        value: Serde[V],
+        records: RecordsInstant[K, V]
     ): Builder =
-      _input(topic, key, value, Right(records))
+      _input(topic, key, value, Right(records.seq.map {
+        case (k, v, t) => (k, v, t.toEpochMilli())
+      }))
 
     def output[K, V](
         topic: String,
@@ -90,7 +106,7 @@ object MockedStreams {
       withProcessedDriver { driver =>
         (0 until size).flatMap { _ =>
           Option(driver.readOutput(topic, key.deserializer, value.deserializer))
-          .map(r => (r.key, r.value))
+            .map(r => (r.key, r.value))
         }
       }
     }
@@ -114,8 +130,20 @@ object MockedStreams {
     }
 
     /**
-      * @throws IllegalArgumentException if duration is negative or can't be represented as long milliseconds
+      * @throws IllegalArgumentException if duration is negative
       */
+    def advanceWallClock(duration: Duration): Builder =
+      advanceWallClock(duration.toMillis())
+
+    /**
+      * @throws IllegalArgumentException if duration is negative
+      */
+    def advanceWallClock(duration: Long): Builder = {
+      if (duration < 0)
+        throw new IllegalArgumentException("Duration cannot be negative")
+      this.copy(inputs = this.inputs :+ WallClock(duration))
+    }
+
     def windowStateTable[K, V](
         name: String,
         key: K,
@@ -130,16 +158,12 @@ object MockedStreams {
       )
     }
 
-    /**
-      * @throws IllegalArgumentException if duration is negative or can't be represented as long milliseconds
-      */
     def windowStateTable[K, V](
         name: String,
         key: K,
         timeFrom: Instant,
         timeTo: Instant
-    ): Map[java.lang.Long, ValueAndTimestamp[V]] =
-      withProcessedDriver { driver =>
+    ): Map[java.lang.Long, ValueAndTimestamp[V]] = withProcessedDriver { driver =>
         val store = driver.getTimestampedWindowStore[K, V](name)
         val records = store.fetch(key, timeFrom, timeTo)
         val list = records.asScala.toList.map { record =>
@@ -162,7 +186,8 @@ object MockedStreams {
       val updatedRecords = records match {
         case Left(withoutTime) =>
           withoutTime.foldLeft(inputs) {
-            case (events, (k, v)) => events :+ Record(factory.create(topic, k, v))
+            case (events, (k, v)) =>
+              events :+ Record(factory.create(topic, k, v))
           }
         case Right(withTime) =>
           withTime.foldLeft(inputs) {
@@ -185,14 +210,10 @@ object MockedStreams {
       new Driver(topology.getOrElse(throw new NoTopologySpecified)(), props)
     }
 
-    def advanceWallClock(time: Long): Builder = {
-      this.copy(inputs = this.inputs :+ WallclockTime(time))
-    }
-
     private def produce(driver: Driver): Unit =
       inputs.foreach {
-        case Record(record) => driver.pipeInput(record)
-        case WallclockTime(time) => driver.advanceWallClockTime(time)
+        case Record(record)      => driver.pipeInput(record)
+        case WallClock(duration) => driver.advanceWallClockTime(duration)
       }
 
     private def withProcessedDriver[T](f: Driver => T): T = {

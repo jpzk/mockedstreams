@@ -32,11 +32,23 @@ import org.apache.kafka.streams.scala.StreamsBuilder
 import org.apache.kafka.streams.scala.kstream.KTable
 import org.apache.kafka.streams.state.ValueAndTimestamp
 import org.scalatest.{FlatSpec, Matchers}
+import java.time.Duration
+import org.apache.kafka.streams.processor.ProcessorContext
 
 class MockedStreamsSpec extends FlatSpec with Matchers {
   import CustomEquality._
 
   behavior of "MockedStreams"
+
+  it should "throw exception when advanced time (Duration) is negative" in {
+    an[IllegalArgumentException] should be thrownBy
+      MockedStreams().advanceWallClock(Duration.ofMillis(-1L))
+  }
+
+  it should "throw exception when advanced time (Long) is negative" in {
+    an[IllegalArgumentException] should be thrownBy
+      MockedStreams().advanceWallClock(-1L)
+  }
 
   it should "throw exception when expected size in output methods is <= 0" in {
     import Fixtures.Uppercase._
@@ -74,10 +86,23 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       t.windowStateTable("window-state-table", 0)
 
     an[NoInputSpecified] should be thrownBy
-      t.windowStateTable("window-state-table",
-                         0,
-                         Instant.ofEpochMilli(Long.MinValue),
-                         Instant.ofEpochMilli(Long.MaxValue))
+      t.windowStateTable(
+        "window-state-table",
+        0,
+        Instant.ofEpochMilli(Long.MinValue),
+        Instant.ofEpochMilli(Long.MaxValue)
+      )
+  }
+
+  it should "punctuate on wall clock time advancement" in {
+    import Fixtures.WallClockTopology._
+
+    val output = MockedStreams()
+    .topology(topology)
+    .advanceWallClock(1000L)
+    .output(OutputTopic, strings, strings, 1)
+
+    output shouldEqual expected
   }
 
   it should "assert correctly when processing strings to uppercase" in {
@@ -161,8 +186,10 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     import Fixtures.Multi._
 
     val props = new Properties
-    props.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
-              classOf[TimestampExtractors.CustomTimestampExtractor].getName)
+    props.put(
+      StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
+      classOf[TimestampExtractors.CustomTimestampExtractor].getName
+    )
 
     val builder = MockedStreams()
       .topology(topology1WindowOutput)
@@ -177,21 +204,24 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     builder
       .windowStateTable[String, Int](StoreName, "y")
       .shouldEqual(expectedCy.toMap)
-      
-    builder
-      .windowStateTable[String, Int](StoreName,
-                                      "y",
-                                      Instant.ofEpochMilli(0L),
-                                      Instant.ofEpochMilli(1L))
-      .shouldEqual(expectedCy.toMap)
-      
 
     builder
-      .windowStateTable[String, Int](StoreName,
-                                      "x",
-                                      Instant.ofEpochMilli(0L),
-                                      Instant.ofEpochMilli(1L))
-     .shouldEqual(expectedCx.toMap)
+      .windowStateTable[String, Int](
+        StoreName,
+        "y",
+        Instant.ofEpochMilli(0L),
+        Instant.ofEpochMilli(1L)
+      )
+      .shouldEqual(expectedCy.toMap)
+
+    builder
+      .windowStateTable[String, Int](
+        StoreName,
+        "x",
+        Instant.ofEpochMilli(0L),
+        Instant.ofEpochMilli(1L)
+      )
+      .shouldEqual(expectedCx.toMap)
   }
 
   it should "accept already built topology" in {
@@ -212,7 +242,6 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
   }
 
   it should "accept consumer records with custom timestamps" in {
-
     import Fixtures.Multi._
 
     val builder = MockedStreams()
@@ -225,14 +254,55 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       .shouldEqual(expectedCWithTimeStamps.toMap)(valueAndTimestampEq[Int])
 
     builder
-      .windowStateTable[String, Long](StoreName,
-                        "x",
-                        Instant.ofEpochMilli(1000L),
-                        Instant.ofEpochMilli(1002L))
+      .windowStateTable[String, Long](
+        StoreName,
+        "x",
+        Instant.ofEpochMilli(1000L),
+        Instant.ofEpochMilli(1002L)
+      )
       .shouldEqual(expectedCWithTimeStamps.toMap)
   }
 
   object Fixtures {
+
+    object WallClockTopology {
+      import org.apache.kafka.streams.processor._
+      import org.apache.kafka.streams.kstream.Transformer
+      import org.apache.kafka.streams.KeyValue
+
+      val InputTopic = "input"
+      val OutputTopic = "output"
+
+      val expected = Seq(("x","y"))
+        val strings: Serde[String] = stringSerde
+
+      def topology(builder: StreamsBuilder) = {
+
+        val b = builder
+          .stream[String, String](InputTopic)
+          .transform { () => new Transformer[String, String, KeyValue[String, String]] {
+            var context: ProcessorContext = null
+            override def init(ctx: ProcessorContext): Unit = {
+              this.context = ctx
+              this.context.schedule(900, PunctuationType.WALL_CLOCK_TIME, new Punctuator {
+                override def punctuate(ts: Long): Unit = {
+                  println(s"Punctuate at ${ts}")
+                  context.forward("x","y",OutputTopic)
+                  context.commit()
+                }
+              }
+              )
+            }
+
+            override def transform(k: String, v: String): KeyValue[String, String] = 
+              new KeyValue[String, String](k, v)
+
+            override def close(): Unit = ()
+          }}
+          .to(OutputTopic)
+
+      }
+    }
 
     object Operations {
       val lastAggregator = (_: String, v: Int, _: Int) => v
@@ -275,8 +345,10 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val expectedA = Seq(("x", 5), ("y", 5))
       val expectedB = Seq(("x", 3), ("y", 1))
 
-      val expectedCx = Seq((1L, ValueAndTimestamp.make(2, 1L)),
-                           (2L, ValueAndTimestamp.make(1, 2L)))
+      val expectedCx = Seq(
+        (1L, ValueAndTimestamp.make(2, 1L)),
+        (2L, ValueAndTimestamp.make(1, 2L))
+      )
       val expectedCy = Seq((1, 1))
 
       val expectedCWithTimeStamps = Seq(
@@ -364,8 +436,10 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
 object TimestampExtractors {
   class CustomTimestampExtractor extends TimestampExtractor {
-    override def extract(record: ConsumerRecord[AnyRef, AnyRef],
-                         previous: Long): Long = record.value match {
+    override def extract(
+        record: ConsumerRecord[AnyRef, AnyRef],
+        previous: Long
+    ): Long = record.value match {
       case value: Integer => value.toLong
       case _              => record.timestamp()
     }
@@ -375,9 +449,13 @@ object TimestampExtractors {
 object CustomEquality {
   import org.scalactic.Equality
 
-  implicit def valueAndTimestampEq[A]: Equality[Map[java.lang.Long, ValueAndTimestamp[A]]] = 
-  new Equality[Map[java.lang.Long, ValueAndTimestamp[A]]] {
-      override def areEqual(a: Map[java.lang.Long, ValueAndTimestamp[A]], b: Any): Boolean = {
+  implicit def valueAndTimestampEq[A]
+      : Equality[Map[java.lang.Long, ValueAndTimestamp[A]]] =
+    new Equality[Map[java.lang.Long, ValueAndTimestamp[A]]] {
+      override def areEqual(
+          a: Map[java.lang.Long, ValueAndTimestamp[A]],
+          b: Any
+      ): Boolean = {
         true
       }
     }
