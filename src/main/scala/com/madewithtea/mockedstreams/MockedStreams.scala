@@ -16,13 +16,14 @@
   */
 package com.madewithtea.mockedstreams
 
-import java.time.Instant
+import java.time.{Duration, Instant}
 import java.util.{Properties, UUID}
 
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.scala.StreamsBuilder
 import org.apache.kafka.streams.state.ValueAndTimestamp
+import org.apache.kafka.streams.{TestInputTopic, TestOutputTopic}
 import org.apache.kafka.streams.test.ConsumerRecordFactory
 import org.apache.kafka.streams.{
   StreamsConfig,
@@ -30,36 +31,66 @@ import org.apache.kafka.streams.{
   TopologyTestDriver => Driver
 }
 
-import scala.collection.JavaConverters._
-import scala.collection.immutable
+import scala.jdk.CollectionConverters._
+import scala.language.implicitConversions
 
 object MockedStreams {
 
   def apply() = Builder()
 
+  sealed trait Input
+  case class Record(consumerRecord: ConsumerRecord[Array[Byte], Array[Byte]])
+      extends Input
+
+  implicit def recordsInstant[K, V](list: Seq[(K, V, Instant)]) =
+    RecordsInstant(list)
+  implicit def recordsLong[K, V](list: Seq[(K, V, Long)]) = RecordsLong(list)
+
+  case class RecordsInstant[K, V](seq: Seq[(K, V, Instant)])
+  case class RecordsLong[K, V](seq: Seq[(K, V, Long)])
+
   case class Builder(
-      topology: Option[() => Topology] = None,
       configuration: Properties = new Properties(),
-      stateStores: Seq[String] = Seq(),
-      inputs: List[ConsumerRecord[Array[Byte], Array[Byte]]] = List.empty
+      driver: Option[Driver] = None,
+      stateStores: Seq[String] = Seq()
   ) {
 
     def config(configuration: Properties): Builder =
       this.copy(configuration = configuration)
 
     def topology(func: StreamsBuilder => Unit): Builder = {
-      val buildTopology = () => {
-        val builder = new StreamsBuilder()
-        func(builder)
-        builder.build()
-      }
-      this.copy(topology = Some(buildTopology))
+      val builder = new StreamsBuilder()
+      func(builder)
+      val topology = builder.build()
+      withTopology(() => topology)
     }
 
-    def withTopology(t: () => Topology): Builder = this.copy(topology = Some(t))
+    def withTopology(t: () => Topology): Builder = {
+      val props = new Properties
+      props.put(
+        StreamsConfig.APPLICATION_ID_CONFIG,
+        s"mocked-${UUID.randomUUID().toString}"
+      )
+      props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+      configuration.asScala.foreach { case (k, v) => props.put(k, v) }
+
+      this.copy(
+        driver = Some(
+          new Driver(t(), props)
+        )
+      )
+    }
+
+    def withDriver[A](f: Driver => A) = driver match {
+      case Some(d) => f(d)
+      case None    => throw new TopologyNotSet
+    }
 
     def stores(stores: Seq[String]): Builder = this.copy(stateStores = stores)
 
+    /**
+      * @throws TopologyNotSet if called before setting topology
+      */
     def input[K, V](
         topic: String,
         key: Serde[K],
@@ -68,142 +99,157 @@ object MockedStreams {
     ): Builder =
       _input(topic, key, value, Left(records))
 
+    /**
+      * @throws TopologyNotSet if called before setting topology
+      */
     def inputWithTime[K, V](
         topic: String,
         key: Serde[K],
         value: Serde[V],
-        records: Seq[(K, V, Long)]
-    ): Builder =
-      _input(topic, key, value, Right(records))
+        records: RecordsLong[K, V]
+    ): Builder = _input[K, V](topic, key, value, Right(records.seq))
 
+    /**
+      * @throws TopologyNotSet if called before setting topology
+      */
+    def inputWithTime[K, V](
+        topic: String,
+        key: Serde[K],
+        value: Serde[V],
+        records: RecordsInstant[K, V]
+    ): Builder =
+      _input(topic, key, value, Right(records.seq.map {
+        case (k, v, t) => (k, v, t.toEpochMilli())
+      }))
+
+    /**
+      * @throws TopologyNotSet if called before setting topology
+      */
+    def output[K, V](
+        topic: String,
+        key: Serde[K],
+        value: Serde[V]
+    ): Seq[(K, V)] = withDriver { driver =>
+      val testTopic = driver
+        .createOutputTopic(topic, key.deserializer(), value.deserializer())
+      testTopic
+        .readRecordsToList()
+        .asScala
+        .map { tr =>
+          (tr.getKey(), tr.getValue())
+        }
+        .toSeq
+    }
+
+    /**
+      * @throws TopologyNotSet if called before setting topology
+      */
+    def outputTable[K, V](
+        topic: String,
+        key: Serde[K],
+        value: Serde[V]
+    ): Map[K, V] =
+      output[K, V](topic, key, value).toMap
+
+
+    /**
+      * @throws TopologyNotSet if called before setting topology
+      * @deprecated Use without size argument instead
+      */    
     def output[K, V](
         topic: String,
         key: Serde[K],
         value: Serde[V],
-        size: Int
-    ): immutable.IndexedSeq[(K, V)] = {
-      if (size <= 0) throw new ExpectedOutputIsEmpty
-      withProcessedDriver { driver =>
-        (0 until size).flatMap { _ =>
-          Option(driver.readOutput(topic, key.deserializer, value.deserializer))
-          .map(r => (r.key, r.value))
-        }
-      }
-    }
+        size: Int 
+    ): Seq[(K, V)] = output(topic, key, value)
 
+    /**
+      * @throws TopologyNotSet if called before setting topology
+      * @deprecated Use without size argument instead
+      */
     def outputTable[K, V](
         topic: String,
         key: Serde[K],
         value: Serde[V],
         size: Int
-    ): Map[K, V] =
-      output[K, V](topic, key, value, size).toMap
+    ): Map[K, V] = output(topic, key, value).toMap
 
-    def stateTable(name: String): Map[Nothing, Nothing] = withProcessedDriver {
-      driver =>
-        val records = driver.getKeyValueStore(name).all()
-        val list = records.asScala.toList.map { record =>
-          (record.key, record.value)
-        }
-        records.close()
-        list.toMap
+    /**
+      * @throws TopologyNotSet if called before setting topology
+      */
+    def stateTable(name: String): Map[Nothing, Nothing] = withDriver { driver =>
+      val records = driver.getKeyValueStore(name).all()
+      val list = records.asScala.toList.map { record =>
+        (record.key, record.value)
+      }
+      records.close()
+      list.toMap
     }
 
     /**
-      * @throws lllegalArgumentException if duration is negative or can't be represented as long milliseconds
+      * @throws TopologyNotSet if called before setting topology
       */
     def windowStateTable[K, V](
         name: String,
         key: K,
         timeFrom: Long = 0,
         timeTo: Long = Long.MaxValue
-    ): Map[java.lang.Long, ValueAndTimestamp[V]] = {
+    ): Map[java.lang.Long, ValueAndTimestamp[V]] =
       windowStateTable[K, V](
         name,
         key,
         Instant.ofEpochMilli(timeFrom),
         Instant.ofEpochMilli(timeTo)
       )
-    }
 
     /**
-      * @throws IllegalArgumentException if duration is negative or can't be represented as long milliseconds
+      * @throws TopologyNotSet if called before setting topology
       */
     def windowStateTable[K, V](
         name: String,
         key: K,
         timeFrom: Instant,
         timeTo: Instant
-    ): Map[java.lang.Long, ValueAndTimestamp[V]] =
-      withProcessedDriver { driver =>
-        val store = driver.getTimestampedWindowStore[K, V](name)
-        val records = store.fetch(key, timeFrom, timeTo)
-        val list = records.asScala.toList.map { record =>
-          (record.key, record.value)
-        }
-        records.close()
-        list.toMap
+    ): Map[java.lang.Long, ValueAndTimestamp[V]] = withDriver { driver =>
+      val store = driver.getTimestampedWindowStore[K, V](name)
+      val records = store.fetch(key, timeFrom, timeTo)
+      val list = records.asScala.toList.map { record =>
+        (record.key, record.value)
       }
+      records.close()
+      list.toMap
+    }
 
     private def _input[K, V](
         topic: String,
         key: Serde[K],
         value: Serde[V],
         records: Either[Seq[(K, V)], Seq[(K, V, Long)]]
-    ) = {
-      val keySer = key.serializer
-      val valSer = value.serializer
-      val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
-
+    ) = withDriver { driver =>
+      val testTopic =
+        driver.createInputTopic(topic, key.serializer, value.serializer)
       val updatedRecords = records match {
         case Left(withoutTime) =>
-          withoutTime.foldLeft(inputs) {
-            case (events, (k, v)) => events :+ factory.create(topic, k, v)
+          withoutTime.foreach {
+            case (k, v) => testTopic.pipeInput(k, v)
           }
         case Right(withTime) =>
-          withTime.foldLeft(inputs) {
-            case (events, (k, v, timestamp)) =>
-              events :+ factory.create(topic, k, v, timestamp)
+          withTime.foreach {
+            case (k, v, timestamp) =>
+              testTopic.pipeInput(k, v, timestamp)
           }
       }
-      this.copy(inputs = updatedRecords)
-    }
-
-    // state store is temporarily created in ProcessorTopologyTestDriver
-    private def stream = {
-      val props = new Properties
-      props.put(
-        StreamsConfig.APPLICATION_ID_CONFIG,
-        s"mocked-${UUID.randomUUID().toString}"
-      )
-      props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-      configuration.asScala.foreach { case (k, v) => props.put(k, v) }
-      new Driver(topology.getOrElse(throw new NoTopologySpecified)(), props)
-    }
-
-    private def produce(driver: Driver): Unit =
-      inputs.foreach(driver.pipeInput)
-
-    private def withProcessedDriver[T](f: Driver => T): T = {
-      if (inputs.isEmpty) throw new NoInputSpecified
-
-      val driver = stream
-      produce(driver)
-      val result: T = f(driver)
-      driver.close()
-      result
+      this
     }
   }
 
-  class NoTopologySpecified
-      extends Exception("No topology specified. Call topology() on builder.")
-
-  class NoInputSpecified
-      extends Exception(
-        "No input fixtures specified. Call input() method on builder."
+  class TopologyNotSet
+      extends IllegalArgumentException(
+        "Call a topology method before inputs, outputs and state store methods. Changed in Mocked Streams >= 3.6.0"
       )
-
-  class ExpectedOutputIsEmpty
-      extends Exception("Output size needs to be greater than 0.")
-
+      
+  class NoTopologySpecified
+      extends IllegalArgumentException(
+        "No topology specified. Call topology() on builder."
+      )
 }

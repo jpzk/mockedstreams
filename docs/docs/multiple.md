@@ -15,5 +15,5 @@ It also allows you to have multiple input and output streams. If your topology u
       .input("in-b", strings, ints, inputB)
       .stores(Seq("store-name"))
 
-    mstreams.output("out-a", strings, ints, expA.size) shouldEqual(expectedA)
-    mstreams.output("out-b", strings, ints, expB.size) shouldEqual(expectedB)
+    mstreams.output("out-a", strings, ints) shouldEqual(expectedA)
+    mstreams.output("out-b", strings, ints) shouldEqual(expectedB)

@@ -1,5 +1,13 @@
 # Changelog
 
+## Mocked Streams 3.6
+
+* Changed internal code to interface with new 2.4 TopologyTestDriver methods (https://issues.apache.org/jira/browse/KAFKA-8233,https://cwiki.apache.org/confluence/display/KAFKA/KIP-470%3A+TopologyTestDriver+test+input+and+output+usability+improvements)
+* Changed deprecated (from => 2.4.0) calls to Kafka Streams API (https://issues.apache.org/jira/browse/KAFKA-7277) 
+* Added input timestamps can be specified in Long and in Instant (https://issues.apache.org/jira/browse/KAFKA-7277)
+* Removed expected size in new .output and .outputTable methods
+* Deprecated output methods with size parameters (not needed anymore)
+
 ## Mocked Streams 3.5
 
 * Added support for Apache 2.4.0

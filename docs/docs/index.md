@@ -16,6 +16,6 @@ It wraps the [org.apache.kafka.streams.TopologyTestDriver](https://github.com/ap
     MockedStreams()
       .topology { builder => builder.stream(...) [...] } // Scala DSL
       .input("topic-in", strings, strings, input)
-      .output("topic-out", strings, strings, exp.size) shouldEqual exp
+      .output("topic-out", strings, strings) shouldEqual exp
 
 

@@ -6,9 +6,9 @@
 
 Documentation located at http://mockedstreams.madewithtea.com/
 
-Mocked Streams 3.5.2 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.12 and 2.13 which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
+Mocked Streams 3.6.0 [(git)](https://github.com/jpzk/mockedstreams) is a library for Scala 2.12 and 2.13 which allows you to **unit-test processing topologies** of [Kafka Streams](https://kafka.apache.org/documentation#streams) applications (since Apache Kafka >=0.10.1) **without Zookeeper and Kafka Brokers**. Further, you can use your favourite Scala testing framework e.g. [ScalaTest](http://www.scalatest.org/) and [Specs2](https://etorreborre.github.io/specs2/). Mocked Streams is located at the Maven Central Repository, therefore you just have to add the following to your [SBT dependencies](http://www.scala-sbt.org/0.13/docs/Library-Dependencies.html):
 
-    libraryDependencies += "com.madewithtea" %% "mockedstreams" % "3.5.2" % "test"
+    libraryDependencies += "com.madewithtea" %% "mockedstreams" % "3.6.0" % "test"
 
 Java 8 port of Mocked Streams is [Mockafka](https://github.com/carlosmenezes/mockafka)
 
@@ -16,6 +16,7 @@ Java 8 port of Mocked Streams is [Mockafka](https://github.com/carlosmenezes/moc
 
 | Mocked Streams Version        | Apache Kafka Version           |
 |------------- |-------------|
+| 3.6.0      | 2.4.1.0 |
 | 3.5.2      | 2.4.0.0 |
 | 3.5.1      | 2.4.0.0 |
 | 3.5.0      | 2.4.0.0 |
@@ -50,7 +51,7 @@ It wraps the [org.apache.kafka.streams.TopologyTestDriver](https://github.com/ap
     MockedStreams()
       .topology { builder => builder.stream(...) [...] } // Scala DSL
       .input("topic-in", strings, strings, input)
-      .output("topic-out", strings, strings, exp.size) shouldEqual exp
+      .output("topic-out", strings, strings) shouldEqual exp
 
 ## Multiple Input / Output Example and State
 
@@ -64,8 +65,8 @@ It also allows you to have multiple input and output streams. If your topology u
       .input("in-b", strings, ints, inputB)
       .stores(Seq("store-name"))
 
-    mstreams.output("out-a", strings, ints, expA.size) shouldEqual(expectedA)
-    mstreams.output("out-b", strings, ints, expB.size) shouldEqual(expectedB)
+    mstreams.output("out-a", strings, ints) shouldEqual(expectedA)
+    mstreams.output("out-b", strings, ints) shouldEqual(expectedB)
 
 ## Record order and multiple emissions
 
@@ -152,8 +153,8 @@ Sometimes you need to pass a custom configuration to Kafka Streams:
       .input("in-b", strings, ints, inputB)
       .stores(Seq("store-name"))
 
-    mstreams.output("out-a", strings, ints, expA.size) shouldEqual(expectedA)
-    mstreams.output("out-b", strings, ints, expB.size) shouldEqual(expectedB)
+    mstreams.output("out-a", strings, ints) shouldEqual(expectedA)
+    mstreams.output("out-b", strings, ints) shouldEqual(expectedB)
  
 ## Companies using Mocked Streams 
 

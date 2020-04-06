@@ -1,16 +1,22 @@
 lazy val commonSettings = Seq(
   organization := "com.madewithtea",
+<<<<<<< HEAD
+  version := "3.6.0",
+  scalaVersion := "2.13.1",
+  crossScalaVersions := List("2.12.10", "2.13.1"),
+=======
   version := "3.5.2",
   scalaVersion := "2.13.1",
   crossScalaVersions := List("2.12.11", "2.13.1"),
+>>>>>>> master
   description := "Topology Unit-Testing Library for Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
-  scalacOptions := Seq("-Xexperimental")
+  scalacOptions := Seq("-deprecation","-feature")
 )
 
 val scalaTestVersion = "3.0.8"
-val rocksDBVersion = "5.18.3"
-val kafkaVersion = "2.4.0"
+val rocksDBVersion = "5.18.4"
+val kafkaVersion = "2.4.1"
 
 lazy val kafka = Seq(
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
@@ -23,6 +29,8 @@ lazy val kafka = Seq(
 
 lazy val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 lazy val rocksDB = "org.rocksdb" % "rocksdbjni" % rocksDBVersion % "test"
+
+Global / useGpg := false
 
 lazy val mockedstreams = (project in file("."))
   .settings(commonSettings: _*)
@@ -83,6 +91,7 @@ micrositeTwitter := "@madewithtea"
 micrositeTwitterCreator := "@madewithtea"
 micrositeCompilingDocsTool := WithMdoc
 micrositeShareOnSocial := true
+
 
 lazy val docs = project // new documentation project
   .in(file("ms-docs")) // important: it must not be docs/
