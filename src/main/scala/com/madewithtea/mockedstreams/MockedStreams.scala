@@ -23,6 +23,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.scala.StreamsBuilder
 import org.apache.kafka.streams.state.ValueAndTimestamp
+import org.apache.kafka.streams.{TestInputTopic, TestOutputTopic}
 import org.apache.kafka.streams.test.ConsumerRecordFactory
 import org.apache.kafka.streams.{
   StreamsConfig,
@@ -38,8 +39,7 @@ object MockedStreams {
   def apply() = Builder()
 
   sealed trait Input
-  case class Record(consumerRecord: ConsumerRecord[Array[Byte], Array[Byte]])
-      extends Input
+  case class Record(consumerRecord: ConsumerRecord[Array[Byte], Array[Byte]]) extends Input
   case class WallClock(duration: Long) extends Input
 
   implicit def recordsInstant[K,V](list: Seq[(K,V,Instant)]) = RecordsInstant(list)
@@ -49,25 +49,39 @@ object MockedStreams {
   case class RecordsLong[K, V](seq: Seq[(K, V, Long)])
 
   case class Builder(
-      topology: Option[() => Topology] = None,
       configuration: Properties = new Properties(),
-      stateStores: Seq[String] = Seq(),
-      inputs: List[Input] = List.empty
+      driver: Option[Driver] = None,
+      stateStores: Seq[String] = Seq()
   ) {
 
     def config(configuration: Properties): Builder =
       this.copy(configuration = configuration)
 
     def topology(func: StreamsBuilder => Unit): Builder = {
-      val buildTopology = () => {
         val builder = new StreamsBuilder()
         func(builder)
-        builder.build()
-      }
-      this.copy(topology = Some(buildTopology))
+        val topology = builder.build()
+        withTopology(() => topology)
     }
 
-    def withTopology(t: () => Topology): Builder = this.copy(topology = Some(t))
+    def withTopology(t: () => Topology): Builder = {
+      val props = new Properties
+      props.put(
+        StreamsConfig.APPLICATION_ID_CONFIG,
+        s"mocked-${UUID.randomUUID().toString}"
+      )
+      props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+      configuration.asScala.foreach { case (k, v) => props.put(k, v) }
+
+      this.copy(driver = Some(
+        new Driver(t(), props)
+      ))
+    }
+
+    def withDriver[A](f: Driver => A) = driver match {
+      case Some(d) => f(d)
+      case None => throw new TopologyNotSet 
+    }
 
     def stores(stores: Seq[String]): Builder = this.copy(stateStores = stores)
 
@@ -99,27 +113,23 @@ object MockedStreams {
     def output[K, V](
         topic: String,
         key: Serde[K],
-        value: Serde[V],
-        size: Int
-    ): immutable.IndexedSeq[(K, V)] = {
-      if (size <= 0) throw new ExpectedOutputIsEmpty
-      withProcessedDriver { driver =>
-        (0 until size).flatMap { _ =>
-          Option(driver.readOutput(topic, key.deserializer, value.deserializer))
-            .map(r => (r.key, r.value))
-        }
-      }
+        value: Serde[V]
+    ): immutable.Seq[(K, V)] = withDriver { driver => 
+      val testTopic = driver.createOutputTopic(topic, key.deserializer(), value.deserializer())
+      testTopic
+        .readRecordsToList()
+        .asScala.map { tr => (tr.getKey(), tr.getValue())}
+        .toSeq
     }
 
     def outputTable[K, V](
         topic: String,
         key: Serde[K],
-        value: Serde[V],
-        size: Int
+        value: Serde[V]
     ): Map[K, V] =
-      output[K, V](topic, key, value, size).toMap
+      output[K, V](topic, key, value).toMap
 
-    def stateTable(name: String): Map[Nothing, Nothing] = withProcessedDriver {
+    def stateTable(name: String): Map[Nothing, Nothing] = withDriver {
       driver =>
         val records = driver.getKeyValueStore(name).all()
         val list = records.asScala.toList.map { record =>
@@ -138,9 +148,10 @@ object MockedStreams {
     /**
       * @throws DurationIsNegative if duration is negative
       */
-    def advanceWallClock(duration: Long): Builder = {
+    def advanceWallClock(duration: Long): Builder = withDriver { driver =>
       if (duration < 0) throw new DurationIsNegative
-      this.copy(inputs = this.inputs :+ WallClock(duration))
+      driver.advanceWallClockTime(duration)
+      this
     }
 
     def windowStateTable[K, V](
@@ -161,7 +172,7 @@ object MockedStreams {
         key: K,
         timeFrom: Instant,
         timeTo: Instant
-    ): Map[java.lang.Long, ValueAndTimestamp[V]] = withProcessedDriver { driver =>
+    ): Map[java.lang.Long, ValueAndTimestamp[V]] = withDriver { driver =>
         val store = driver.getTimestampedWindowStore[K, V](name)
         val records = store.fetch(key, timeFrom, timeTo)
         val list = records.asScala.toList.map { record =>
@@ -176,54 +187,29 @@ object MockedStreams {
         key: Serde[K],
         value: Serde[V],
         records: Either[Seq[(K, V)], Seq[(K, V, Long)]]
-    ) = {
+    ) = withDriver { driver => 
       val keySer = key.serializer
       val valSer = value.serializer
       val factory = new ConsumerRecordFactory[K, V](keySer, valSer)
 
+      val testTopic = driver.createInputTopic(topic, keySer, valSer)
       val updatedRecords = records match {
         case Left(withoutTime) =>
-          withoutTime.foldLeft(inputs) {
-            case (events, (k, v)) =>
-              events :+ Record(factory.create(topic, k, v))
+          withoutTime.foreach {
+            case (k, v) => testTopic.pipeInput(k, v)
           }
         case Right(withTime) =>
-          withTime.foldLeft(inputs) {
-            case (events, (k, v, timestamp)) =>
-              events :+ Record(factory.create(topic, k, v, timestamp))
+          withTime.foreach {
+            case (k, v, timestamp) =>
+              testTopic.pipeInput(k, v, timestamp)
           }
       }
-      this.copy(inputs = updatedRecords)
-    }
-
-    // state store is temporarily created in ProcessorTopologyTestDriver
-    private def stream = {
-      val props = new Properties
-      props.put(
-        StreamsConfig.APPLICATION_ID_CONFIG,
-        s"mocked-${UUID.randomUUID().toString}"
-      )
-      props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-      configuration.asScala.foreach { case (k, v) => props.put(k, v) }
-      new Driver(topology.getOrElse(throw new NoTopologySpecified)(), props)
-    }
-
-    private def produce(driver: Driver): Unit =
-      inputs.foreach {
-        case Record(record)      => driver.pipeInput(record)
-        case WallClock(duration) => driver.advanceWallClockTime(duration)
-      }
-
-    private def withProcessedDriver[T](f: Driver => T): T = {
-      if (inputs.isEmpty) throw new NoInputSpecified
-
-      val driver = stream
-      produce(driver)
-      val result: T = f(driver)
-      driver.close()
-      result
+      this
     }
   }
+
+  class TopologyNotSet extends 
+    IllegalArgumentException("Call a topology method before inputs, outputs and state store methods.")
 
   class DurationIsNegative 
     extends IllegalArgumentException("Duration cannot be negative.")
@@ -231,10 +217,6 @@ object MockedStreams {
   class NoTopologySpecified
       extends IllegalArgumentException("No topology specified. Call topology() on builder.")
 
-  class NoInputSpecified
-      extends IllegalArgumentException(
-        "No input fixtures specified. Call input() method on builder."
-      )
   class ExpectedOutputIsEmpty
       extends IllegalArgumentException("Output size needs to be greater than 0.")
 

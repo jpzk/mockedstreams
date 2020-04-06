@@ -34,21 +34,53 @@ import org.apache.kafka.streams.state.ValueAndTimestamp
 import org.scalatest.{FlatSpec, Matchers}
 import java.time.Duration
 import org.apache.kafka.streams.processor.ProcessorContext
-import com.madewithtea.mockedstreams.MockedStreams.DurationIsNegative
+import com.madewithtea.mockedstreams.MockedStreams.{
+  DurationIsNegative,
+  TopologyNotSet
+}
 
 class MockedStreamsSpec extends FlatSpec with Matchers {
   import CustomEquality._
 
   behavior of "MockedStreams"
 
+  it should "throw exception when inputs specified before topology" in {
+    an[TopologyNotSet] should be thrownBy
+      MockedStreams().input("input", stringSerde, stringSerde, Seq())
+  }
+
+  it should "throw exception when outputs specified before topology" in {
+    an[TopologyNotSet] should be thrownBy
+      MockedStreams().output("output", stringSerde, stringSerde)
+  }
+  it should "throw exception state store access before topology " in {
+    an[TopologyNotSet] should be thrownBy
+      MockedStreams().windowStateTable(
+        "table",
+        "key",
+        Instant.now(),
+        Instant.now().plusMillis(1)
+      )
+  }
+
+  it should "throw exception wall clock access before topology " in {
+    an[TopologyNotSet] should be thrownBy
+      MockedStreams()
+      .advanceWallClock(Duration.ofMillis(-1L))
+  }
+
   it should "throw exception when advanced time (Duration) is negative" in {
     an[DurationIsNegative] should be thrownBy
-      MockedStreams().advanceWallClock(Duration.ofMillis(-1L))
+      MockedStreams()
+      .topology(builder => builder.build())
+      .advanceWallClock(Duration.ofMillis(-1L))
   }
 
   it should "throw exception when advanced time (Long) is negative" in {
     an[DurationIsNegative] should be thrownBy
-      MockedStreams().advanceWallClock(-1L)
+      MockedStreams()
+      .topology(builder => builder.build()) 
+      .advanceWallClock(-1L)
   }
 
   it should "throw exception when expected size in output methods is <= 0" in {
@@ -61,47 +93,21 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
     Seq(-1, 0).foreach { size =>
       an[ExpectedOutputIsEmpty] should be thrownBy
-        spec.output(OutputTopic, strings, strings, size)
+        spec.output(OutputTopic, strings, strings)
 
       an[ExpectedOutputIsEmpty] should be thrownBy
-        spec.outputTable(OutputTopic, strings, strings, size)
+        spec.outputTable(OutputTopic, strings, strings)
     }
-  }
-
-  it should "throw exception when no input specified for all output and state methods" in {
-    import Fixtures.Uppercase._
-    import MockedStreams.NoInputSpecified
-
-    val t = MockedStreams().topology(topology)
-
-    an[NoInputSpecified] should be thrownBy
-      t.output(OutputTopic, strings, strings, expected.size)
-
-    an[NoInputSpecified] should be thrownBy
-      t.outputTable(OutputTopic, strings, strings, expected.size)
-
-    an[NoInputSpecified] should be thrownBy
-      t.stateTable("state-table")
-
-    an[NoInputSpecified] should be thrownBy
-      t.windowStateTable("window-state-table", 0)
-
-    an[NoInputSpecified] should be thrownBy
-      t.windowStateTable(
-        "window-state-table",
-        0,
-        Instant.ofEpochMilli(Long.MinValue),
-        Instant.ofEpochMilli(Long.MaxValue)
-      )
   }
 
   it should "punctuate on wall clock time advancement" in {
     import Fixtures.WallClockTopology._
 
     val output = MockedStreams()
-    .topology(topology)
-    .advanceWallClock(1000L)
-    .output(OutputTopic, strings, strings, 1)
+      .topology(topology)
+      .input("InputTopic", strings, strings, input)
+      .advanceWallClock(Duration.ofMillis(900L))
+      .output(OutputTopic, strings, strings)
 
     output shouldEqual expected
   }
@@ -112,7 +118,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     val output = MockedStreams()
       .topology(topology)
       .input(InputTopic, strings, strings, input)
-      .output(OutputTopic, strings, strings, expected.size)
+      .output(OutputTopic, strings, strings)
 
     output shouldEqual expected
   }
@@ -123,7 +129,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     val output = MockedStreams()
       .topology(topology)
       .input(InputTopic, strings, strings, input)
-      .outputTable(OutputTopic, strings, strings, expected.size)
+      .outputTable(OutputTopic, strings, strings)
 
     output shouldEqual expected.toMap
   }
@@ -137,7 +143,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       .input(InputBTopic, strings, ints, inputB)
       .stores(Seq(StoreName))
 
-    builder.output(OutputATopic, strings, ints, expectedA.size) shouldEqual expectedA
+    builder.output(OutputATopic, strings, ints) shouldEqual expectedA
     builder.stateTable(StoreName) shouldEqual inputA.toMap
   }
 
@@ -151,11 +157,11 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       .stores(Seq(StoreName))
 
     builder
-      .output(OutputATopic, strings, ints, expectedA.size)
+      .output(OutputATopic, strings, ints)
       .shouldEqual(expectedA)
 
     builder
-      .output(OutputBTopic, strings, ints, expectedB.size)
+      .output(OutputBTopic, strings, ints)
       .shouldEqual(expectedB)
 
     builder.stateTable(StoreName) shouldEqual inputA.toMap
@@ -177,7 +183,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       .input(InputATopic, strings, ints, secondInputForTopicA)
 
     builder
-      .output(OutputATopic, strings, ints, expectedOutput.size)
+      .output(OutputATopic, strings, ints)
       .shouldEqual(expectedOutput)
   }
 
@@ -237,7 +243,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     val output = MockedStreams()
       .withTopology(() => getTopology)
       .input(InputTopic, strings, strings, input)
-      .output(OutputTopic, strings, strings, expected.size)
+      .output(OutputTopic, strings, strings)
 
     output shouldEqual expected
   }
@@ -275,29 +281,35 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val InputTopic = "input"
       val OutputTopic = "output"
 
-      val expected = Seq(("x","y"))
+      val input = Seq(("x", "y"))
+      val expected = Seq(("x", "y"))
       val strings: Serde[String] = stringSerde
 
-      def topology(builder: StreamsBuilder) = (new Topology())
-        .addSource("Source", InputTopic)
-        .addProcessor("Process", () => new ForwardProcessor(), "Source")
-        .addSink("Sink",OutputTopic, "Process")
+      def topology(builder: StreamsBuilder) =
+        (new Topology())
+          .addSource("Source", "InputTopic")
+          .addProcessor("Process", () => new ForwardProcessor(), "Source")
+          .addSink("Sink", OutputTopic, "Process")
 
       class ForwardProcessor extends Processor[String, String] {
-            var context: ProcessorContext = null
-            override def init(ctx: ProcessorContext): Unit = {
-              this.context = ctx
-              this.context.schedule(900, PunctuationType.WALL_CLOCK_TIME, new Punctuator {
-                override def punctuate(ts: Long): Unit = {
-                  println(s"Punctuate at ${ts}")
-                  context.forward("x","y",OutputTopic)
-                  context.commit()
-                }
+        var context: ProcessorContext = null
+
+        override def init(ctx: ProcessorContext): Unit = {
+          this.context = ctx
+          this.context.schedule(
+            100,
+            PunctuationType.WALL_CLOCK_TIME,
+            new Punctuator {
+              override def punctuate(ts: Long): Unit = {
+                println(s"Punctuate at ${ts}")
+                context.forward("x", "y", OutputTopic)
+                context.commit()
               }
-              )
             }
-            override def process(k: String, v: String): Unit = ()
-            override def close(): Unit = ()
+          )
+        }
+        override def process(k: String, v: String): Unit = ()
+        override def close(): Unit = ()
       }
     }
 
