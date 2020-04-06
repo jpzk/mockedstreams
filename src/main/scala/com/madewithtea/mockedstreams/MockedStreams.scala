@@ -33,7 +33,6 @@ import org.apache.kafka.streams.{
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
-import scala.collection.immutable
 
 object MockedStreams {
 
@@ -131,7 +130,7 @@ object MockedStreams {
         topic: String,
         key: Serde[K],
         value: Serde[V]
-    ): immutable.Seq[(K, V)] = withDriver { driver =>
+    ): Seq[(K, V)] = withDriver { driver =>
       val testTopic = driver
         .createOutputTopic(topic, key.deserializer(), value.deserializer())
       testTopic
@@ -163,7 +162,7 @@ object MockedStreams {
         key: Serde[K],
         value: Serde[V],
         size: Int 
-    ): immutable.Seq[(K, V)] = output(topic, key, value)
+    ): Seq[(K, V)] = output(topic, key, value)
 
     /**
       * @throws TopologyNotSet if called before setting topology

@@ -24,6 +24,8 @@ lazy val kafka = Seq(
 lazy val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 lazy val rocksDB = "org.rocksdb" % "rocksdbjni" % rocksDBVersion % "test"
 
+Global / useGpg := false
+
 lazy val mockedstreams = (project in file("."))
   .settings(commonSettings: _*)
   .settings(
