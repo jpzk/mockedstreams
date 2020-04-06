@@ -1,14 +1,8 @@
 lazy val commonSettings = Seq(
   organization := "com.madewithtea",
-<<<<<<< HEAD
   version := "3.6.0",
   scalaVersion := "2.13.1",
   crossScalaVersions := List("2.12.10", "2.13.1"),
-=======
-  version := "3.5.2",
-  scalaVersion := "2.13.1",
-  crossScalaVersions := List("2.12.11", "2.13.1"),
->>>>>>> master
   description := "Topology Unit-Testing Library for Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
   scalacOptions := Seq("-deprecation","-feature")
