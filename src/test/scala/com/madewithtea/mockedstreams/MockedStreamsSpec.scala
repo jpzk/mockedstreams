@@ -34,10 +34,7 @@ import org.apache.kafka.streams.state.ValueAndTimestamp
 import org.scalatest.{FlatSpec, Matchers}
 import java.time.Duration
 import org.apache.kafka.streams.processor.ProcessorContext
-import com.madewithtea.mockedstreams.MockedStreams.{
-  DurationIsNegative,
-  TopologyNotSet
-}
+import com.madewithtea.mockedstreams.MockedStreams.TopologyNotSet
 
 class MockedStreamsSpec extends FlatSpec with Matchers {
   import CustomEquality._
@@ -53,6 +50,12 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
     an[TopologyNotSet] should be thrownBy
       MockedStreams().output("output", stringSerde, stringSerde)
   }
+
+  it should "throw exception when outputTable specified before topology" in {
+    an[TopologyNotSet] should be thrownBy
+      MockedStreams().outputTable("output", stringSerde, stringSerde)
+  }
+
   it should "throw exception state store access before topology " in {
     an[TopologyNotSet] should be thrownBy
       MockedStreams().windowStateTable(
@@ -61,26 +64,6 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
         Instant.now(),
         Instant.now().plusMillis(1)
       )
-  }
-
-  it should "throw exception wall clock access before topology " in {
-    an[TopologyNotSet] should be thrownBy
-      MockedStreams()
-      .advanceWallClock(Duration.ofMillis(-1L))
-  }
-
-  it should "throw exception when advanced time (Duration) is negative" in {
-    an[DurationIsNegative] should be thrownBy
-      MockedStreams()
-      .topology(builder => builder.build())
-      .advanceWallClock(Duration.ofMillis(-1L))
-  }
-
-  it should "throw exception when advanced time (Long) is negative" in {
-    an[DurationIsNegative] should be thrownBy
-      MockedStreams()
-      .topology(builder => builder.build()) 
-      .advanceWallClock(-1L)
   }
 
   it should "assert correctly when processing strings to uppercase" in {

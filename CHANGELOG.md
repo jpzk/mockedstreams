@@ -2,9 +2,10 @@
 
 ## Mocked Streams 3.6
 
-* Changed internal code to interface with new 2.4 driver methods
-* Input timestamps can be specified in Long and in Instant
-* No need to specifiy expected size in new .output and .outputTable methods
+* Changed internal code to interface with new 2.4 TopologyTestDriver methods
+* Changed deprecated (from => 2.4.0) calls to Kafka Streams API 
+* Added input timestamps can be specified in Long and in Instant
+* Removed expected size in new .output and .outputTable methods
 * Deprecated output methods with size parameters (not needed anymore)
 
 ## Mocked Streams 3.5

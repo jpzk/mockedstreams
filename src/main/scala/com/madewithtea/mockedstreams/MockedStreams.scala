@@ -189,23 +189,6 @@ object MockedStreams {
     }
 
     /**
-      * @throws DurationIsNegative if duration is negative
-      * @throws TopologyNotSet if called before setting topology
-      */
-    def advanceWallClock(duration: Duration): Builder = withDriver { driver =>
-      if (duration.isNegative) throw new DurationIsNegative
-      driver.advanceWallClockTime(duration)
-      this
-    }
-
-    /**
-      * @throws DurationIsNegative if duration is negative
-      * @throws TopologyNotSet if called before setting topology
-      */
-    def advanceWallClock(duration: Long): Builder =
-      advanceWallClock(Duration.ofMillis(duration))
-
-    /**
       * @throws TopologyNotSet if called before setting topology
       */
     def windowStateTable[K, V](
@@ -264,12 +247,9 @@ object MockedStreams {
 
   class TopologyNotSet
       extends IllegalArgumentException(
-        "Call a topology method before inputs, outputs and state store methods."
+        "Call a topology method before inputs, outputs and state store methods. Changed in Mocked Streams >= 3.6.0"
       )
-
-  class DurationIsNegative
-      extends IllegalArgumentException("Duration cannot be negative.")
-
+      
   class NoTopologySpecified
       extends IllegalArgumentException(
         "No topology specified. Call topology() on builder."
