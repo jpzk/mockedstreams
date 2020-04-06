@@ -61,6 +61,8 @@ Please use the corresponding Mocked Streams version to a concrete Apache Kafka v
 
 ## Companies using Mocked Streams 
 
+* [BlaBlaCar](https://medium.com/blablacar-tech)
+* [PMU.fr](https://www.pmu.fr/)
 * [Sky.uk](https://www.sky.com/)
-* [moip, a wirecard company](https://moip.com.br/en/)
 * [Hive Streaming AB](https://www.hivestreaming.com/)
+* [moip, a wirecard company](https://moip.com.br/en/)

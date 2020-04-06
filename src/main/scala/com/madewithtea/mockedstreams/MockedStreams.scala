@@ -41,7 +41,6 @@ object MockedStreams {
   sealed trait Input
   case class Record(consumerRecord: ConsumerRecord[Array[Byte], Array[Byte]])
       extends Input
-  case class WallClock(duration: Long) extends Input
 
   implicit def recordsInstant[K, V](list: Seq[(K, V, Instant)]) =
     RecordsInstant(list)
