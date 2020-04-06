@@ -297,7 +297,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
         override def init(ctx: ProcessorContext): Unit = {
           this.context = ctx
           this.context.schedule(
-            100,
+            Duration.ofMillis(100),
             PunctuationType.WALL_CLOCK_TIME,
             new Punctuator {
               override def punctuate(ts: Long): Unit = {

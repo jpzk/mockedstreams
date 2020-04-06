@@ -1,5 +1,12 @@
 # Changelog
 
+## Mocked Streams 3.6
+
+* Changed internal code to interface with new 2.4 driver methods
+* Input timestamps can be specified in Long and in Instant
+* No need to specifiy expected size in new .output and .outputTable methods
+* Deprecated output methods with size parameters (not needed anymore)
+
 ## Mocked Streams 3.5
 
 * Added support for Apache 2.4.0

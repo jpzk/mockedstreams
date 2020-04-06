@@ -5,7 +5,7 @@ lazy val commonSettings = Seq(
   crossScalaVersions := List("2.12.10", "2.13.1"),
   description := "Topology Unit-Testing Library for Kafka Streams",
   organizationHomepage := Some(url("https://www.madewithtea.com")),
-  scalacOptions := Seq("-Xexperimental")
+  scalacOptions := Seq("-deprecation","-feature")
 )
 
 val scalaTestVersion = "3.0.8"
