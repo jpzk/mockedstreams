@@ -34,6 +34,7 @@ import org.apache.kafka.streams.state.ValueAndTimestamp
 import org.scalatest.{FlatSpec, Matchers}
 import java.time.Duration
 import org.apache.kafka.streams.processor.ProcessorContext
+import com.madewithtea.mockedstreams.MockedStreams.DurationIsNegative
 
 class MockedStreamsSpec extends FlatSpec with Matchers {
   import CustomEquality._
@@ -41,12 +42,12 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
   behavior of "MockedStreams"
 
   it should "throw exception when advanced time (Duration) is negative" in {
-    an[IllegalArgumentException] should be thrownBy
+    an[DurationIsNegative] should be thrownBy
       MockedStreams().advanceWallClock(Duration.ofMillis(-1L))
   }
 
   it should "throw exception when advanced time (Long) is negative" in {
-    an[IllegalArgumentException] should be thrownBy
+    an[DurationIsNegative] should be thrownBy
       MockedStreams().advanceWallClock(-1L)
   }
 
