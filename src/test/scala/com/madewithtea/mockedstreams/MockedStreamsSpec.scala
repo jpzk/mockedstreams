@@ -267,6 +267,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
     object WallClockTopology {
       import org.apache.kafka.streams.processor._
+      import org.apache.kafka.streams.Topology
       import org.apache.kafka.streams.kstream.Transformer
       import org.apache.kafka.streams.KeyValue
 
@@ -274,13 +275,14 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       val OutputTopic = "output"
 
       val expected = Seq(("x","y"))
-        val strings: Serde[String] = stringSerde
+      val strings: Serde[String] = stringSerde
 
-      def topology(builder: StreamsBuilder) = {
+      def topology(builder: StreamsBuilder) = (new Topology())
+        .addSource("Source", InputTopic)
+        .addProcessor("Process", () => new ForwardProcessor(), "Source")
+        .addSink("Sink",OutputTopic, "Process")
 
-        val b = builder
-          .stream[String, String](InputTopic)
-          .transform { () => new Transformer[String, String, KeyValue[String, String]] {
+      class ForwardProcessor extends Processor[String, String] {
             var context: ProcessorContext = null
             override def init(ctx: ProcessorContext): Unit = {
               this.context = ctx
@@ -293,14 +295,8 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
               }
               )
             }
-
-            override def transform(k: String, v: String): KeyValue[String, String] = 
-              new KeyValue[String, String](k, v)
-
+            override def process(k: String, v: String): Unit = ()
             override def close(): Unit = ()
-          }}
-          .to(OutputTopic)
-
       }
     }
 

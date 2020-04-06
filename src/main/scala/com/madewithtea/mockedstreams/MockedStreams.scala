@@ -130,17 +130,16 @@ object MockedStreams {
     }
 
     /**
-      * @throws IllegalArgumentException if duration is negative
+      * @throws DurationIsNegative if duration is negative
       */
     def advanceWallClock(duration: Duration): Builder =
       advanceWallClock(duration.toMillis())
 
     /**
-      * @throws IllegalArgumentException if duration is negative
+      * @throws DurationIsNegative if duration is negative
       */
     def advanceWallClock(duration: Long): Builder = {
-      if (duration < 0)
-        throw new IllegalArgumentException("Duration cannot be negative")
+      if (duration < 0) throw new DurationIsNegative
       this.copy(inputs = this.inputs :+ WallClock(duration))
     }
 
@@ -149,14 +148,13 @@ object MockedStreams {
         key: K,
         timeFrom: Long = 0,
         timeTo: Long = Long.MaxValue
-    ): Map[java.lang.Long, ValueAndTimestamp[V]] = {
+    ): Map[java.lang.Long, ValueAndTimestamp[V]] = 
       windowStateTable[K, V](
         name,
         key,
         Instant.ofEpochMilli(timeFrom),
         Instant.ofEpochMilli(timeTo)
       )
-    }
 
     def windowStateTable[K, V](
         name: String,
@@ -227,15 +225,17 @@ object MockedStreams {
     }
   }
 
+  class DurationIsNegative 
+    extends IllegalArgumentException("Duration cannot be negative.")
+
   class NoTopologySpecified
-      extends Exception("No topology specified. Call topology() on builder.")
+      extends IllegalArgumentException("No topology specified. Call topology() on builder.")
 
   class NoInputSpecified
-      extends Exception(
+      extends IllegalArgumentException(
         "No input fixtures specified. Call input() method on builder."
       )
-
   class ExpectedOutputIsEmpty
-      extends Exception("Output size needs to be greater than 0.")
+      extends IllegalArgumentException("Output size needs to be greater than 0.")
 
 }
