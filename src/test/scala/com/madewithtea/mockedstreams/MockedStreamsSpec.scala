@@ -83,35 +83,6 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       .advanceWallClock(-1L)
   }
 
-  it should "throw exception when expected size in output methods is <= 0" in {
-    import Fixtures.Uppercase._
-    import MockedStreams.ExpectedOutputIsEmpty
-
-    val spec = MockedStreams()
-      .topology(topology)
-      .input(InputTopic, strings, strings, input)
-
-    Seq(-1, 0).foreach { size =>
-      an[ExpectedOutputIsEmpty] should be thrownBy
-        spec.output(OutputTopic, strings, strings)
-
-      an[ExpectedOutputIsEmpty] should be thrownBy
-        spec.outputTable(OutputTopic, strings, strings)
-    }
-  }
-
-  it should "punctuate on wall clock time advancement" in {
-    import Fixtures.WallClockTopology._
-
-    val output = MockedStreams()
-      .topology(topology)
-      .input("InputTopic", strings, strings, input)
-      .advanceWallClock(Duration.ofMillis(900L))
-      .output(OutputTopic, strings, strings)
-
-    output shouldEqual expected
-  }
-
   it should "assert correctly when processing strings to uppercase" in {
     import Fixtures.Uppercase._
 
@@ -272,47 +243,6 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
 
   object Fixtures {
 
-    object WallClockTopology {
-      import org.apache.kafka.streams.processor._
-      import org.apache.kafka.streams.Topology
-      import org.apache.kafka.streams.kstream.Transformer
-      import org.apache.kafka.streams.KeyValue
-
-      val InputTopic = "input"
-      val OutputTopic = "output"
-
-      val input = Seq(("x", "y"))
-      val expected = Seq(("x", "y"))
-      val strings: Serde[String] = stringSerde
-
-      def topology(builder: StreamsBuilder) =
-        (new Topology())
-          .addSource("Source", "InputTopic")
-          .addProcessor("Process", () => new ForwardProcessor(), "Source")
-          .addSink("Sink", OutputTopic, "Process")
-
-      class ForwardProcessor extends Processor[String, String] {
-        var context: ProcessorContext = null
-
-        override def init(ctx: ProcessorContext): Unit = {
-          this.context = ctx
-          this.context.schedule(
-            Duration.ofMillis(100),
-            PunctuationType.WALL_CLOCK_TIME,
-            new Punctuator {
-              override def punctuate(ts: Long): Unit = {
-                println(s"Punctuate at ${ts}")
-                context.forward("x", "y", OutputTopic)
-                context.commit()
-              }
-            }
-          )
-        }
-        override def process(k: String, v: String): Unit = ()
-        override def close(): Unit = ()
-      }
-    }
-
     object Operations {
       val lastAggregator = (_: String, v: Int, _: Int) => v
 
@@ -397,7 +327,7 @@ class MockedStreamsSpec extends FlatSpec with Matchers {
       def topology1WindowOutput(builder: StreamsBuilder) = {
         val streamA = builder.stream[String, Int](InputCTopic)
         streamA.groupByKey
-          .windowedBy(TimeWindows.of(1))
+          .windowedBy(TimeWindows.of(Duration.ofMillis(1)))
           .count()(Materialized.as(StoreName))
       }
 

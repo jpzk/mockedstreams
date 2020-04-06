@@ -274,10 +274,4 @@ object MockedStreams {
       extends IllegalArgumentException(
         "No topology specified. Call topology() on builder."
       )
-
-  class ExpectedOutputIsEmpty
-      extends IllegalArgumentException(
-        "Output size needs to be greater than 0."
-      )
-
 }
