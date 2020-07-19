@@ -1,5 +1,9 @@
 # Changelog
 
+## Mocked Streams 3.7
+
+* Added support for Apache Kafka 2.5.0
+
 ## Mocked Streams 3.6
 
 * Changed internal code to interface with new 2.4 TopologyTestDriver methods (https://issues.apache.org/jira/browse/KAFKA-8233,https://cwiki.apache.org/confluence/display/KAFKA/KIP-470%3A+TopologyTestDriver+test+input+and+output+usability+improvements)
@@ -10,7 +14,7 @@
 
 ## Mocked Streams 3.5
 
-* Added support for Apache 2.4.0
+* Added support for Apache Kafka 2.4.0
 * Changed Scala to 2.12.10
 * Updated sbt-mdoc to 2.0.2
 
