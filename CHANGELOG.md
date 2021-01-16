@@ -1,5 +1,9 @@
 # Changelog
 
+## Mocked Streams 3.9
+
+* Added support for Apache Kafka 2.7.0
+
 ## Mocked Streams 3.8
 
 * Added support for Apache Kafka 2.6.1
