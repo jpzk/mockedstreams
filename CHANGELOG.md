@@ -1,5 +1,10 @@
 # Changelog
 
+## Mocked Streams 3.8
+
+* Added support for Apache Kafka 2.6.1
+* Added Sandon Jacobs as contributor
+
 ## Mocked Streams 3.7
 
 * Added support for Apache Kafka 2.5.0
